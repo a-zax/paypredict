@@ -11,6 +11,11 @@ ROOT = Path(__file__).resolve().parent.parent
 STORAGE = Path(os.environ.get("PAYPREDICT_STORAGE", ROOT / "storage"))
 STORAGE.mkdir(parents=True, exist_ok=True)
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{STORAGE / 'paypredict.db'}")
+if "://" not in DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL must be the full connection string, e.g. "
+        "postgresql://user:password@host/dbname?sslmode=require (copy it from Neon -> Connect), "
+        f"not just a host or endpoint id (got '{DATABASE_URL[:40]}').")
 if DATABASE_URL.startswith("postgres://"):  # Render/Heroku style URL
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 

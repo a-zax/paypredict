@@ -8,6 +8,7 @@ import joblib
 
 import numpy as np
 import pandas as pd
+from sqlalchemy import update
 from sqlmodel import Session, delete, select
 
 from . import actions as A
@@ -153,6 +154,7 @@ def rescore(s: Session, org: Org):
     hist = _history_by_buyer(s, org.id)
     od = org_dict(org)
     invs = {i.id: i for i in s.exec(select(Invoice).where(Invoice.id.in_(open_["id"].tolist()))).all()}
+    updates = []
     for n, (idx, row) in enumerate(open_.iterrows()):
         inv = invs[int(row["id"])]
         rec_in = dict(amount=inv.amount, invoice_date=inv.invoice_date, due_date=inv.due_date,
@@ -170,17 +172,16 @@ def rescore(s: Session, org: Org):
             why = (f"The customer says they've paid via UPI"
                    + (f" (reference {inv.claim_ref})" if inv.claim_ref else "") + ". Check your bank statement and confirm.")
             value, priority = 0.0, inv.amount * 10
-        inv.p_late = rec_in["p_late"]
-        inv.exp_days_late = float(dist["q50"][n])
-        inv.lo_days_late = float(dist["lo"][n])
-        inv.hi_days_late = float(dist["hi"][n])
-        inv.action, inv.rationale, inv.benefit, inv.priority = action, why, float(value), float(priority)
         lead = [f"Already {overdue} days past the due date"] if overdue > 0 else []
         lead += ["Missed a promised payment date"] if broken else []
-        inv.reasons = json.dumps(lead + A.reasons_for(row.to_dict(), deltas.loc[idx].to_dict(), top=4 - len(lead)))
-        inv.pmf = json.dumps([round(float(x), 4) for x in dist["pmf"][n]])
-        inv.scored_on = t
-        s.add(inv)
+        updates.append(dict(
+            id=inv.id, p_late=rec_in["p_late"], exp_days_late=float(dist["q50"][n]),
+            lo_days_late=float(dist["lo"][n]), hi_days_late=float(dist["hi"][n]),
+            action=action, rationale=why, benefit=float(value), priority=float(priority),
+            reasons=json.dumps(lead + A.reasons_for(row.to_dict(), deltas.loc[idx].to_dict(), top=4 - len(lead))),
+            pmf=json.dumps([round(float(x), 4) for x in dist["pmf"][n]]), scored_on=t))
+    # One batched UPDATE instead of a round trip per invoice (hundreds of trips to a hosted database add up).
+    s.execute(update(Invoice), updates)
     s.commit()
 
 
