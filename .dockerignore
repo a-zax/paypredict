@@ -1,0 +1,9 @@
+.venv
+storage
+storage_test
+web/node_modules
+web/dist
+tests
+**/__pycache__
+.claude
+.git

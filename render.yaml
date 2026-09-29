@@ -1,0 +1,16 @@
+# Render Blueprint: free web service. Data lives in a free Neon Postgres database (DATABASE_URL),
+# because free Render instances have no persistent disk.
+services:
+  - type: web
+    name: paypredict
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false            # paste the Neon connection string when Render asks
+      - key: PAYPREDICT_SECRET
+        generateValue: true    # keeps users logged in across restarts
+      - key: ANTHROPIC_API_KEY
+        sync: false            # optional: enables the AI assistant

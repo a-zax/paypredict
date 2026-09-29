@@ -1,0 +1,221 @@
+buyer_id,buyer_name,buyer_type,industry,city,treds_onboarded,covered_43bh,credit_terms
+B000,Narmada Commerce Pvt Ltd,MSME Buyer,Retail / E-com,Bengaluru,False,True,45
+B001,Himgiri Consumer Products Pvt Ltd,Mid-size Company,FMCG,Bengaluru,False,True,45
+B002,Yamuna Home Care Ltd,Large Corporate,FMCG,Indore,True,True,30
+B003,Chetak Retail Pvt Ltd,MSME Buyer,Retail / E-com,Indore,False,True,30
+B004,Omkar Fabrics Pvt Ltd,MSME Buyer,Textiles,Hyderabad,False,True,45
+B005,Narmada Home Care Pvt Ltd,Mid-size Company,FMCG,Surat,True,True,30
+B006,Deccan Autotech Ltd,Large Corporate,Automotive,Pune,True,True,45
+B007,Deccan Electricals Ltd,Large Corporate,Electronics,Ahmedabad,True,True,30
+B008,Zenith Retail Pvt Ltd,Mid-size Company,Retail / E-com,Nashik,False,True,45
+B009,Prabhat Pharma Ltd,Large Corporate,Pharma,Nashik,True,True,45
+B010,Chetak Electronics Pvt Ltd,MSME Buyer,Electronics,Pune,False,True,45
+B011,Kaveri Electricals Pvt Ltd,MSME Buyer,Electronics,Mumbai,False,True,45
+B012,Omkar Motors Pvt Ltd,Mid-size Company,Automotive,Nagpur,False,True,45
+B013,Pragati Engineering Pvt Ltd,MSME Buyer,Engineering / Infra,Delhi NCR,False,True,45
+B014,Pragati Consumer Products Ltd,Large Corporate,FMCG,Nagpur,False,True,30
+B015,Suvarna Consumer Products Ltd,Large Corporate,FMCG,Indore,True,True,30
+B016,Prabhat Mart Pvt Ltd,Mid-size Company,Retail / E-com,Mumbai,False,True,45
+B017,Shivneri Healthcare Pvt Ltd,Mid-size Company,Pharma,Surat,True,True,30
+B018,Vindhya Apparels Pvt Ltd,Mid-size Company,Textiles,Mumbai,True,True,30
+B019,Anant Fabricators Pvt Ltd,Mid-size Company,Engineering / Infra,Mumbai,True,True,30
+B020,Shivneri Fabricators Pvt Ltd,Mid-size Company,Engineering / Infra,Hyderabad,True,True,30
+B021,Bharat Foods Pvt Ltd,MSME Buyer,FMCG,Mumbai,False,True,45
+B022,Omkar Appliances Pvt Ltd,MSME Buyer,Electronics,Delhi NCR,False,True,30
+B023,Konkan Healthcare Pvt Ltd,MSME Buyer,Pharma,Aurangabad,False,True,45
+B024,Yamuna Electricals Ltd,MNC,Electronics,Chennai,False,True,30
+B025,Vaibhav Textiles Pvt Ltd,MSME Buyer,Textiles,Surat,False,True,45
+B026,Eklavya Healthcare Pvt Ltd,Mid-size Company,Pharma,Chennai,True,True,45
+B027,Kaveri Electronics Pvt Ltd,Mid-size Company,Electronics,Aurangabad,False,True,30
+B028,Narmada Textiles Pvt Ltd,MSME Buyer,Textiles,Surat,False,True,45
+B029,Anant Commerce Pvt Ltd,Mid-size Company,Retail / E-com,Hyderabad,False,True,45
+B030,Konkan Healthcare Ltd,Large Corporate,Pharma,Delhi NCR,True,True,30
+B031,Deccan Fabricators Pvt Ltd,MSME Buyer,Engineering / Infra,Surat,True,True,30
+B032,Suvarna Apparels Pvt Ltd,MSME Buyer,Textiles,Hyderabad,False,True,30
+B033,Tapti Fabrics Pvt Ltd,MSME Buyer,Textiles,Delhi NCR,False,True,45
+B034,Vaibhav Engineering Ltd,Large Corporate,Engineering / Infra,Mumbai,True,True,45
+B035,Himgiri Autotech Pvt Ltd,Mid-size Company,Automotive,Mumbai,False,True,45
+B036,Sahyog Apparels Pvt Ltd,Mid-size Company,Textiles,Indore,False,True,45
+B037,Kaveri Electronics Ltd,Large Corporate,Electronics,Indore,True,True,45
+B038,Yamuna Textiles Pvt Ltd,Mid-size Company,Textiles,Nagpur,False,True,30
+B039,Vindhya Textiles Pvt Ltd,MSME Buyer,Textiles,Surat,False,True,45
+B040,Prabhat Motors Ltd,MNC,Automotive,Nashik,True,True,30
+B041,Kaveri Infra Projects Pvt Ltd,Mid-size Company,Engineering / Infra,Ahmedabad,False,True,45
+B042,Lakshya Textiles Ltd,Large Corporate,Textiles,Pune,False,True,30
+B043,Shivneri Mart Pvt Ltd,Mid-size Company,Retail / E-com,Surat,False,True,45
+B044,Govt Procurement Office #044 (Aurangabad),Govt Department,Pharma,Aurangabad,False,False,30
+B045,Chetak Textiles Pvt Ltd,MSME Buyer,Textiles,Chennai,False,True,45
+B046,Mahima Apparels Pvt Ltd,MSME Buyer,Textiles,Indore,False,True,45
+B047,Rajdhani Auto Components Ltd,MNC,Automotive,Delhi NCR,True,True,30
+B048,Govt Procurement Office #048 (Chennai),Govt Department,Automotive,Chennai,False,False,45
+B049,Kaveri Electricals Ltd,MNC,Electronics,Pune,True,True,45
+B050,Shivneri Autotech Pvt Ltd,Mid-size Company,Automotive,Surat,False,True,30
+B051,Tapti Fabricators Pvt Ltd,Mid-size Company,Engineering / Infra,Surat,False,True,30
+B052,Govt Procurement Office #052 (Indore),Govt Department,Engineering / Infra,Indore,False,False,30
+B053,Kaveri Mart Ltd,MNC,Retail / E-com,Surat,True,True,30
+B054,Himgiri Electronics Pvt Ltd,MSME Buyer,Electronics,Aurangabad,False,True,30
+B055,Anant Electronics Ltd,Large Corporate,Electronics,Pune,True,True,30
+B056,Pragati Appliances Pvt Ltd,Mid-size Company,Electronics,Mumbai,False,True,45
+B057,Narmada Lifesciences Ltd,MNC,Pharma,Hyderabad,True,True,30
+B058,Eklavya Commerce Ltd,Large Corporate,Retail / E-com,Nagpur,True,True,45
+B059,Janseva Appliances Pvt Ltd,MSME Buyer,Electronics,Nashik,False,True,45
+B060,Shivneri Appliances Pvt Ltd,Mid-size Company,Electronics,Ahmedabad,False,True,45
+B061,Mahima Electronics Pvt Ltd,MSME Buyer,Electronics,Chennai,False,True,30
+B062,Konkan Apparels Pvt Ltd,MSME Buyer,Textiles,Hyderabad,False,True,45
+B063,Mahima Fabrics Pvt Ltd,MSME Buyer,Textiles,Chennai,False,True,30
+B064,Bharat Auto Components Ltd,Large Corporate,Automotive,Indore,True,True,45
+B065,Vaibhav Pharma Ltd,Large Corporate,Pharma,Pune,True,True,30
+B066,Vaibhav Autotech Ltd,Large Corporate,Automotive,Mumbai,True,True,45
+B067,Mahima Home Care Ltd,MNC,FMCG,Delhi NCR,False,True,30
+B068,Ganga Consumer Products Pvt Ltd,Mid-size Company,FMCG,Bengaluru,False,True,30
+B069,Prabhat Fabrics Pvt Ltd,Mid-size Company,Textiles,Aurangabad,False,True,30
+B070,Mahima Engineering Ltd,MNC,Engineering / Infra,Pune,False,True,45
+B071,Konkan Auto Components Pvt Ltd,Mid-size Company,Automotive,Pune,False,True,30
+B072,Omkar Textiles Pvt Ltd,Mid-size Company,Textiles,Mumbai,False,True,30
+B073,Yamuna Motors Ltd,Large Corporate,Automotive,Mumbai,True,True,45
+B074,Rajdhani Appliances Pvt Ltd,MSME Buyer,Electronics,Chennai,False,True,30
+B075,Sarthi Engineering Ltd,Large Corporate,Engineering / Infra,Aurangabad,True,True,45
+B076,Zenith Fabricators Pvt Ltd,Mid-size Company,Engineering / Infra,Hyderabad,False,True,45
+B077,Ganga Motors Pvt Ltd,Mid-size Company,Automotive,Bengaluru,False,True,45
+B078,Prabhat Auto Components Pvt Ltd,MSME Buyer,Automotive,Surat,False,True,30
+B079,Omkar Home Care Ltd,Large Corporate,FMCG,Ahmedabad,True,True,30
+B080,Govt Procurement Office #080 (Chennai),Govt Department,FMCG,Chennai,False,False,30
+B081,Vindhya Electronics Pvt Ltd,MSME Buyer,Electronics,Nagpur,False,True,30
+B082,Yamuna Motors Pvt Ltd,Mid-size Company,Automotive,Nagpur,False,True,45
+B083,Chetak Auto Components Pvt Ltd,Mid-size Company,Automotive,Aurangabad,False,True,45
+B084,Chetak Electricals Pvt Ltd,MSME Buyer,Electronics,Pune,False,True,45
+B085,Eklavya Textiles Ltd,Large Corporate,Textiles,Mumbai,False,True,30
+B086,Vindhya Motors Ltd,MNC,Automotive,Bengaluru,True,True,45
+B087,Deccan Healthcare Pvt Ltd,Mid-size Company,Pharma,Nagpur,False,True,45
+B088,Pragati Autotech Pvt Ltd,MSME Buyer,Automotive,Nagpur,False,True,30
+B089,Vindhya Appliances Pvt Ltd,Mid-size Company,Electronics,Nashik,True,True,30
+B090,Utkarsh Auto Components Ltd,Large Corporate,Automotive,Bengaluru,True,True,45
+B091,Sarthi Fabricators Pvt Ltd,MSME Buyer,Engineering / Infra,Nashik,False,True,30
+B092,Lakshya Appliances Pvt Ltd,Mid-size Company,Electronics,Hyderabad,False,True,45
+B093,Suvarna Auto Components Pvt Ltd,Mid-size Company,Automotive,Aurangabad,True,True,45
+B094,Yamuna Home Care Pvt Ltd,Mid-size Company,FMCG,Mumbai,False,True,45
+B095,Himgiri Lifesciences Pvt Ltd,MSME Buyer,Pharma,Bengaluru,False,True,45
+B096,Govt Procurement Office #096 (Surat),Govt Department,FMCG,Surat,False,False,45
+B097,Narmada Pharma Pvt Ltd,Mid-size Company,Pharma,Mumbai,False,True,30
+B098,Konkan Foods Pvt Ltd,MSME Buyer,FMCG,Ahmedabad,False,True,30
+B099,Govt Procurement Office #099 (Pune),Govt Department,Pharma,Pune,False,False,30
+B100,Anant Infra Projects Pvt Ltd,Mid-size Company,Engineering / Infra,Hyderabad,False,True,30
+B101,Ganga Fabricators Pvt Ltd,Mid-size Company,Engineering / Infra,Pune,False,True,45
+B102,Sahyog Healthcare Pvt Ltd,Mid-size Company,Pharma,Ahmedabad,False,True,45
+B103,Navkar Lifesciences Pvt Ltd,Mid-size Company,Pharma,Surat,True,True,45
+B104,Eklavya Lifesciences Ltd,Large Corporate,Pharma,Nashik,True,True,30
+B105,Vaibhav Appliances Pvt Ltd,Mid-size Company,Electronics,Chennai,False,True,30
+B106,Govt Procurement Office #106 (Nashik),Govt Department,Textiles,Nashik,False,False,45
+B107,Utkarsh Textiles Ltd,MNC,Textiles,Chennai,False,True,45
+B108,Lakshya Electricals Pvt Ltd,MSME Buyer,Electronics,Aurangabad,False,True,30
+B109,Mahima Auto Components Ltd,Large Corporate,Automotive,Nashik,True,True,30
+B110,Lakshya Fabricators Pvt Ltd,MSME Buyer,Engineering / Infra,Delhi NCR,False,True,30
+B111,Sarthi Textiles Pvt Ltd,Mid-size Company,Textiles,Bengaluru,True,True,45
+B112,Anant Engineering Pvt Ltd,Mid-size Company,Engineering / Infra,Ahmedabad,False,True,45
+B113,Aadi Infra Projects Ltd,Large Corporate,Engineering / Infra,Indore,True,True,45
+B114,Eklavya Consumer Products Pvt Ltd,MSME Buyer,FMCG,Delhi NCR,False,True,45
+B115,Navkar Pharma Pvt Ltd,Mid-size Company,Pharma,Pune,True,True,45
+B116,Govt Procurement Office #116 (Aurangabad),Govt Department,Electronics,Aurangabad,False,False,45
+B117,Himgiri Appliances Ltd,Large Corporate,Electronics,Nashik,True,True,30
+B118,Eklavya Apparels Pvt Ltd,MSME Buyer,Textiles,Indore,False,True,30
+B119,Konkan Autotech Ltd,MNC,Automotive,Nashik,True,True,30
+B120,Konkan Foods Ltd,Large Corporate,FMCG,Mumbai,False,True,45
+B121,Konkan Pharma Ltd,Large Corporate,Pharma,Mumbai,True,True,45
+B122,Navkar Electricals Pvt Ltd,Mid-size Company,Electronics,Hyderabad,True,True,45
+B123,Govt Procurement Office #123 (Ahmedabad),Govt Department,Engineering / Infra,Ahmedabad,False,False,45
+B124,Indus Apparels Pvt Ltd,MSME Buyer,Textiles,Aurangabad,False,True,45
+B125,Aadi Commerce Pvt Ltd,MSME Buyer,Retail / E-com,Nagpur,False,True,45
+B126,Lakshya Motors Ltd,MNC,Automotive,Pune,False,True,45
+B127,Eklavya Retail Pvt Ltd,Mid-size Company,Retail / E-com,Mumbai,False,True,30
+B128,Shivneri Electricals Ltd,Large Corporate,Electronics,Nagpur,False,True,45
+B129,Indus Commerce Ltd,MNC,Retail / E-com,Bengaluru,False,True,45
+B130,Lakshya Lifesciences Pvt Ltd,Mid-size Company,Pharma,Aurangabad,False,True,30
+B131,Omkar Commerce Ltd,MNC,Retail / E-com,Aurangabad,False,True,45
+B132,Deccan Engineering Pvt Ltd,Mid-size Company,Engineering / Infra,Indore,False,True,45
+B133,Konkan Electricals Pvt Ltd,Mid-size Company,Electronics,Ahmedabad,False,True,30
+B134,Govt Procurement Office #134 (Surat),Govt Department,Pharma,Surat,False,False,45
+B135,Zenith Motors Pvt Ltd,Mid-size Company,Automotive,Chennai,False,True,45
+B136,Sahyog Pharma Pvt Ltd,Mid-size Company,Pharma,Chennai,False,True,30
+B137,Suvarna Foods Ltd,MNC,FMCG,Nagpur,True,True,45
+B138,Yamuna Lifesciences Pvt Ltd,Mid-size Company,Pharma,Bengaluru,False,True,30
+B139,Pragati Infra Projects Pvt Ltd,Mid-size Company,Engineering / Infra,Surat,False,True,30
+B140,Sarthi Electronics Pvt Ltd,MSME Buyer,Electronics,Hyderabad,False,True,45
+B141,Anant Infra Projects Ltd,MNC,Engineering / Infra,Chennai,False,True,30
+B142,Prabhat Infra Projects Pvt Ltd,Mid-size Company,Engineering / Infra,Chennai,False,True,30
+B143,Ganga Lifesciences Pvt Ltd,Mid-size Company,Pharma,Surat,False,True,45
+B144,Vindhya Home Care Ltd,MNC,FMCG,Indore,False,True,30
+B145,Sarthi Home Care Pvt Ltd,MSME Buyer,FMCG,Bengaluru,False,True,45
+B146,Rajdhani Consumer Products Pvt Ltd,Mid-size Company,FMCG,Hyderabad,False,True,30
+B147,Tapti Autotech Pvt Ltd,Mid-size Company,Automotive,Nashik,False,True,30
+B148,Suvarna Appliances Pvt Ltd,MSME Buyer,Electronics,Chennai,False,True,30
+B149,Govt Procurement Office #149 (Bengaluru),Govt Department,Automotive,Bengaluru,False,False,30
+B150,Eklavya Fabrics Pvt Ltd,Mid-size Company,Textiles,Delhi NCR,False,True,45
+B151,Yamuna Fabrics Ltd,Large Corporate,Textiles,Hyderabad,True,True,45
+B152,Sahyog Electronics Ltd,Large Corporate,Electronics,Bengaluru,True,True,45
+B153,Utkarsh Fabrics Ltd,Large Corporate,Textiles,Bengaluru,True,True,30
+B154,Kaveri Autotech Pvt Ltd,Mid-size Company,Automotive,Aurangabad,False,True,45
+B155,Zenith Healthcare Pvt Ltd,MSME Buyer,Pharma,Bengaluru,False,True,45
+B156,Chetak Fabricators Pvt Ltd,MSME Buyer,Engineering / Infra,Ahmedabad,True,True,30
+B157,Bharat Fabrics Pvt Ltd,Mid-size Company,Textiles,Hyderabad,True,True,30
+B158,Eklavya Appliances Pvt Ltd,MSME Buyer,Electronics,Mumbai,False,True,45
+B159,Rajdhani Textiles Ltd,Large Corporate,Textiles,Hyderabad,True,True,45
+B160,Shivneri Fabrics Ltd,Large Corporate,Textiles,Surat,False,True,30
+B161,Pragati Appliances Ltd,Large Corporate,Electronics,Hyderabad,True,True,30
+B162,Prabhat Engineering Pvt Ltd,Mid-size Company,Engineering / Infra,Hyderabad,False,True,30
+B163,Indus Motors Pvt Ltd,Mid-size Company,Automotive,Chennai,False,True,30
+B164,Rajdhani Engineering Pvt Ltd,MSME Buyer,Engineering / Infra,Pune,False,True,45
+B165,Aadi Electronics Pvt Ltd,MSME Buyer,Electronics,Bengaluru,False,True,30
+B166,Janseva Commerce Pvt Ltd,Mid-size Company,Retail / E-com,Chennai,True,True,30
+B167,Janseva Electricals Pvt Ltd,Mid-size Company,Electronics,Bengaluru,True,True,30
+B168,Chetak Engineering Ltd,Large Corporate,Engineering / Infra,Surat,True,True,45
+B169,Yamuna Consumer Products Pvt Ltd,Mid-size Company,FMCG,Mumbai,False,True,30
+B170,Kaveri Consumer Products Pvt Ltd,MSME Buyer,FMCG,Mumbai,False,True,45
+B171,Chetak Motors Ltd,Large Corporate,Automotive,Bengaluru,True,True,30
+B172,Pragati Retail Ltd,Large Corporate,Retail / E-com,Nagpur,True,True,45
+B173,Tapti Fabrics Ltd,Large Corporate,Textiles,Delhi NCR,True,True,45
+B174,Mahima Appliances Pvt Ltd,MSME Buyer,Electronics,Delhi NCR,False,True,30
+B175,Rajdhani Electronics Ltd,MNC,Electronics,Surat,True,True,30
+B176,Pragati Home Care Pvt Ltd,MSME Buyer,FMCG,Nagpur,False,True,45
+B177,Prabhat Motors Pvt Ltd,Mid-size Company,Automotive,Ahmedabad,False,True,45
+B178,Pragati Lifesciences Pvt Ltd,Mid-size Company,Pharma,Surat,False,True,30
+B179,Mahima Textiles Pvt Ltd,Mid-size Company,Textiles,Aurangabad,True,True,30
+B180,Deccan Apparels Pvt Ltd,MSME Buyer,Textiles,Hyderabad,False,True,30
+B181,Konkan Commerce Ltd,Large Corporate,Retail / E-com,Indore,True,True,45
+B182,Navkar Lifesciences Ltd,MNC,Pharma,Aurangabad,True,True,30
+B183,Govt Procurement Office #183 (Nagpur),Govt Department,Engineering / Infra,Nagpur,False,False,45
+B184,Omkar Mart Pvt Ltd,Mid-size Company,Retail / E-com,Pune,False,True,30
+B185,Govt Procurement Office #185 (Aurangabad),Govt Department,Automotive,Aurangabad,False,False,45
+B186,Chetak Foods Ltd,Large Corporate,FMCG,Indore,True,True,45
+B187,Govt Procurement Office #187 (Pune),Govt Department,Automotive,Pune,False,False,30
+B188,Deccan Home Care Pvt Ltd,MSME Buyer,FMCG,Delhi NCR,False,True,30
+B189,Sarthi Electronics Ltd,Large Corporate,Electronics,Chennai,False,True,45
+B190,Govt Procurement Office #190 (Ahmedabad),Govt Department,Automotive,Ahmedabad,False,False,45
+B191,Sahyog Fabrics Pvt Ltd,Mid-size Company,Textiles,Delhi NCR,False,True,30
+B192,Zenith Appliances Pvt Ltd,MSME Buyer,Electronics,Ahmedabad,False,True,45
+B193,Kaveri Apparels Ltd,Large Corporate,Textiles,Nashik,True,True,45
+B194,Prabhat Autotech Pvt Ltd,Mid-size Company,Automotive,Bengaluru,False,True,45
+B195,Shivneri Motors Pvt Ltd,MSME Buyer,Automotive,Nashik,False,True,30
+B196,Sarthi Electricals Pvt Ltd,Mid-size Company,Electronics,Pune,False,True,30
+B197,Rajdhani Motors Ltd,MNC,Automotive,Hyderabad,True,True,45
+B198,Zenith Engineering Pvt Ltd,MSME Buyer,Engineering / Infra,Pune,False,True,45
+B199,Lakshya Auto Components Pvt Ltd,MSME Buyer,Automotive,Delhi NCR,False,True,45
+B200,Tapti Electricals Pvt Ltd,MSME Buyer,Electronics,Indore,False,True,30
+B201,Bharat Engineering Pvt Ltd,MSME Buyer,Engineering / Infra,Nashik,False,True,45
+B202,Zenith Lifesciences Pvt Ltd,MSME Buyer,Pharma,Indore,False,True,30
+B203,Suvarna Autotech Pvt Ltd,MSME Buyer,Automotive,Ahmedabad,False,True,30
+B204,Aadi Mart Ltd,Large Corporate,Retail / E-com,Bengaluru,True,True,30
+B205,Sarthi Healthcare Pvt Ltd,Mid-size Company,Pharma,Nashik,False,True,45
+B206,Narmada Lifesciences Pvt Ltd,MSME Buyer,Pharma,Ahmedabad,False,True,45
+B207,Omkar Electricals Pvt Ltd,Mid-size Company,Electronics,Nagpur,False,True,30
+B208,Govt Procurement Office #208 (Nashik),Govt Department,Textiles,Nashik,False,False,30
+B209,Kaveri Autotech Ltd,Large Corporate,Automotive,Hyderabad,True,True,45
+B210,Suvarna Lifesciences Ltd,Large Corporate,Pharma,Ahmedabad,True,True,30
+B211,Govt Procurement Office #211 (Hyderabad),Govt Department,Automotive,Hyderabad,False,False,45
+B212,Eklavya Pharma Ltd,Large Corporate,Pharma,Delhi NCR,True,True,45
+B213,Kaveri Commerce Pvt Ltd,Mid-size Company,Retail / E-com,Indore,True,True,45
+B214,Govt Procurement Office #214 (Delhi NCR),Govt Department,Retail / E-com,Delhi NCR,False,False,45
+B215,Govt Procurement Office #215 (Mumbai),Govt Department,Engineering / Infra,Mumbai,False,False,30
+B216,Sarthi Pharma Pvt Ltd,Mid-size Company,Pharma,Ahmedabad,False,True,45
+B217,Himgiri Infra Projects Pvt Ltd,Mid-size Company,Engineering / Infra,Mumbai,False,True,45
+B218,Indus Textiles Pvt Ltd,Mid-size Company,Textiles,Bengaluru,False,True,45
+B219,Vaibhav Pharma Pvt Ltd,MSME Buyer,Pharma,Nagpur,False,True,30

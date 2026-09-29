@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+storage/
+storage_test/
+web/node_modules/
+web/dist/
+tests/demo_account.json
+.env
+.claude/
+.pytest_cache/

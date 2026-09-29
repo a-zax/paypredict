@@ -1,0 +1,15 @@
+anthropic==1.9.0
+bcrypt==5.0.0
+email-validator==2.3.0
+fastapi==0.141.1
+joblib==1.6.0
+numpy==2.4.6
+openpyxl==3.1.5
+pandas==3.0.6
+psycopg[binary]==3.3.6
+PyJWT==2.15.1
+python-multipart==0.0.32
+scikit-learn==1.9.1
+segno==1.6.6
+sqlmodel==0.0.47
+uvicorn==0.54.0
