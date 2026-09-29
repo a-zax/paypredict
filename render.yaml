@@ -5,6 +5,7 @@ services:
     name: paypredict
     runtime: docker
     plan: free
+    region: singapore      # closest free region to India; create the Neon DB in AWS Singapore too
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
