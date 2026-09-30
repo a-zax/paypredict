@@ -35,7 +35,7 @@ export function Notice() {
         {data.invoices.length === 0 && <div className="w-full rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">No invoices from this customer are past the legal payment period - no notice needed.</div>}
       </div>
 
-      <article className="mx-auto max-w-[210mm] bg-white px-[18mm] py-[16mm] text-[13px] leading-relaxed text-slate-900 shadow-xl print:max-w-none print:shadow-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontVariantNumeric: "lining-nums tabular-nums" }}>
+      <article className="mx-auto max-w-[210mm] bg-white px-5 py-8 text-[13px] sm:px-[18mm] sm:py-[16mm] print:px-[18mm] print:py-[16mm] leading-relaxed text-slate-900 shadow-xl print:max-w-none print:shadow-none" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontVariantNumeric: "lining-nums tabular-nums" }}>
         <header className="border-b-2 border-slate-900 pb-3">
           <div className="text-xl font-bold">{data.seller.name}</div>
           <div className="text-[12px] text-slate-700">
@@ -59,7 +59,9 @@ export function Notice() {
           which in no case may exceed forty-five days from the day of acceptance. The following amounts remain unpaid as on {d(data.date, long)}:
         </p>
 
-        <table className="mt-4 w-full border-collapse text-[12px]">
+        {/* Scrolls sideways on a phone instead of widening the whole page; prints at full width. */}
+        <div className="mt-4 overflow-x-auto print:overflow-visible">
+        <table className="w-full min-w-[520px] border-collapse text-[12px]">
           <thead>
             <tr className="bg-slate-100">
               {["Invoice No.", "Invoice date", "Due date", "Amount (₹)", "Interest from", "Days", "Interest (₹)"].map((h) => (
@@ -87,6 +89,7 @@ export function Notice() {
             </tr>
           </tbody>
         </table>
+        </div>
 
         <p className="mt-4">
           Under Section 16 of the Act, you are liable to pay compound interest with monthly rests at three times the bank rate notified by the

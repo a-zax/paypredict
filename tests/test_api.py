@@ -42,6 +42,21 @@ def test_upi_pay_loop(client, org_a):
     assert client.get(f"/api/pay/{token}").json()["status"] == "paid"
 
 
+def test_customer_language_drives_message_pay_link_and_subject(client, org_a):
+    from urllib.parse import unquote
+    client.patch("/api/org", headers=org_a, json={"upi_id": "alpha@okicici"})
+    a = next(x for x in client.get("/api/today", headers=org_a).json()["actions"]
+             if x["action"] in ("REMINDER", "EARLY_PAY_OFFER", "LEGAL_NUDGE", "SAMADHAAN"))
+    assert client.patch(f"/api/buyers/{a['buyer_id']}", headers=org_a, json={"language": "hi"}).status_code == 200
+    assert client.patch(f"/api/buyers/{a['buyer_id']}", headers=org_a, json={"language": "fr"}).status_code == 422
+    v = client.get(f"/api/invoices/{a['id']}", headers=org_a).json()
+    assert v["message_lang"] == "hi" and "lang=hi" in v["message"] and "subject=इनवॉइस" in unquote(v["email_url"])
+    assert client.get(f"/api/invoices/{a['id']}?lang=en", headers=org_a).json()["message_lang"] == "en"   # drawer override
+    client.patch(f"/api/buyers/{a['buyer_id']}", headers=org_a, json={"language": ""})
+    v = client.get(f"/api/invoices/{a['id']}", headers=org_a).json()
+    assert v["message_lang"] == "en" and "lang=" not in v["message"]
+
+
 def test_claim_rejected_resumes_follow_up(client, org_a):
     a = next(x for x in client.get("/api/today", headers=org_a).json()["actions"] if x.get("pay_url"))
     token = a["pay_url"].rsplit("/pay/", 1)[1]
@@ -74,6 +89,14 @@ def test_credit_check_verdicts(client, org_a):
     r = client.post("/api/credit-check", headers=org_a, json={"new_customer": "Unknown Co", "amount": 100000, "credit_days": 30}).json()
     assert r["verdict"] == "CONDITIONS" and r["advance_pct"] == 25
     assert client.post("/api/credit-check", headers=org_a, json={"amount": 1000, "credit_days": 30}).status_code == 400
+    r = client.post("/api/credit-check", headers=org_a, json={"new_customer": "Unknown Co", "amount": 100000, "credit_days": 30, "lang": "hi"}).json()
+    assert r["message_lang"] == "hi" and "ऑर्डर" in r["message"]
+
+
+def test_credit_check_leads_with_overdue(client, org_a):
+    worst = max(client.get("/api/buyers", headers=org_a).json(), key=lambda c: c["overdue_amount"])
+    r = client.post("/api/credit-check", headers=org_a, json={"buyer_id": worst["id"], "amount": 50000, "credit_days": 30}).json()
+    assert "already overdue" in r["reasons"][0]
 
 
 def test_security_headers_and_login_rate_limit(client):
@@ -115,9 +138,16 @@ def test_demo_login_shared_and_safe(client):
     h = {"Authorization": "Bearer " + r1.json()["token"]}
     assert client.post("/api/auth/demo").json()["org"]["id"] == r1.json()["org"]["id"]   # same shared business, no re-seed
     assert client.post("/api/reset", headers=h).status_code == 403
+    assert client.patch("/api/org", headers=h, json={"name": "Hacked"}).status_code == 403
+    assert client.post("/api/import/sample", headers=h).status_code == 403
+    assert client.post("/api/import/preview", headers=h, files={"file": ("x.csv", b"a,b\n1,2")}).status_code == 403
+    buyer = client.get("/api/buyers", headers=h).json()[0]["id"]
+    assert client.patch(f"/api/buyers/{buyer}", headers=h, json={"phone": "9876543210"}).status_code == 403
+    assert client.patch(f"/api/buyers/{buyer}", headers=h, json={"language": "hi"}).status_code == 200   # harmless preference
+    client.patch(f"/api/buyers/{buyer}", headers=h, json={"language": ""})
     a = next(x for x in client.get("/api/today", headers=h).json()["actions"] if x.get("pay_url"))
     page = client.get("/api/pay/" + a["pay_url"].rsplit("/pay/", 1)[1]).json()
-    assert page["demo"] and page["upi_url"] is None and page["qr_svg"] is None and page["upi_id"] == ""
+    assert page["demo"] and page["upi_url"] is None and page["qr_svg"] and page["upi_id"] == ""
 
 
 def test_undo_claim_rejection_restores_claim(client, org_a):
@@ -127,3 +157,10 @@ def test_undo_claim_rejection_restores_claim(client, org_a):
     client.post(f"/api/invoices/{a['id']}/log", headers=org_a, json={"kind": "CLAIM_REJECTED"})
     assert client.post(f"/api/invoices/{a['id']}/undo", headers=org_a).status_code == 200
     assert client.get(f"/api/invoices/{a['id']}", headers=org_a).json()["claim_at"] is not None
+
+
+def test_forecast_splits_shortfall_by_customer(client, org_a):
+    f = client.get("/api/forecast?weeks=12", headers=org_a).json()
+    gaps = [g["gap"] for g in f["gap_by_customer"]]
+    assert f["gap_weeks"] == 4 and gaps == sorted(gaps, reverse=True) and len(gaps) <= 5
+    assert all(g > 0 for g in gaps) and f["gap_total"] >= sum(gaps) - 1

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Brain, Database, PiggyBank, RefreshCw, Smartphone, Target, Timer, TrendingUp, Wallet } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { axisTick, legendProps, tooltipProps } from "../lib/chart";
 import { toast } from "sonner";
 import { Badge, Button, Card, Empty, Skeleton, Term } from "../components/ui";
 import { api, type Impact } from "../lib/api";
@@ -13,15 +14,25 @@ type ModelInfo = {
   insights: { actions: { kind: string; title: string; sent: number; success_rate: number | null; avg_days_to_pay: number | null }[]; actions_taken: number; recovered_after_action: number };
 };
 
-const tip = { borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", color: "var(--ink)" };
 
 function ImpactSection() {
   const { data: im } = useQuery<Impact>({ queryKey: ["impact"], queryFn: () => api("/impact") });
   if (!im) return <Skeleton className="mt-6 h-40" />;
   const trend = (im.trend ?? []).map((t) => ({ ...t, dso: t.dso == null ? null : Math.round(t.dso), late: t.late_share == null ? null : Math.round(t.late_share * 100) }));
   const first = trend.find((t) => t.dso != null), last = [...trend].reverse().find((t) => t.dso != null);
+  // Four ₹0 tiles read as "this did nothing" - until there's a result, say what will appear and when.
+  const hasResults = im.collected_after_action > 0 || im.days_saved >= 1 || im.interest_saved >= 1 || im.upi_collected > 0;
   return (
     <>
+      {!hasResults ? (
+        <Card data-tour="impact-cards" className="mt-6 flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300"><Wallet className="size-6" /></span>
+          <div className="flex-1">
+            <div className="font-semibold ink">{im.actions_taken ? `${im.actions_taken} actions taken - results usually show within 10 days` : "Your results will appear here"}</div>
+            <p className="text-sm ink-2">Money collected after each reminder, days saved against the AI's forecast, overdraft interest saved and UPI payments - measured from the moment you act, not claimed for every payment.</p>
+          </div>
+        </Card>
+      ) : (
       <div data-tour="impact-cards" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           [<Wallet key="w" className="size-5 text-emerald-500" />, inrShort(im.collected_after_action), `collected within 30 days of an action (${im.collected_count} invoices)`],
@@ -32,7 +43,7 @@ function ImpactSection() {
           <Card key={i} className="p-5">{icon}<div className="mt-3 text-2xl font-semibold num ink">{v}</div><div className="mt-1 text-xs ink-2">{l}</div></Card>
         ))}
       </div>
-      {im.actions_taken === 0 && <p className="mt-3 text-sm ink-2">These fill up as you act on the Today list. Days saved are measured against what the AI predicted at the moment you acted - not claimed for every payment.</p>}
+      )}
       <Card className="mt-4 p-5 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
@@ -47,12 +58,12 @@ function ImpactSection() {
           <ResponsiveContainer>
             <ComposedChart data={trend} margin={{ left: -16, right: 0, top: 8 }}>
               <CartesianGrid vertical={false} stroke="var(--line)" />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} />
-              <YAxis yAxisId="d" tickLine={false} axisLine={false} unit="d" />
-              <YAxis yAxisId="p" orientation="right" tickLine={false} axisLine={false} unit="%" />
-              <Tooltip contentStyle={tip} />
-              <Legend />
-              <Bar yAxisId="p" dataKey="late" name="% paid 15+ days late" fill="#fda4af" radius={[6, 6, 0, 0]} />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tick={axisTick} />
+              <YAxis yAxisId="d" tickLine={false} axisLine={false} unit="d" tick={{ ...axisTick, fill: "#818cf8" }} />
+              <YAxis yAxisId="p" orientation="right" tickLine={false} axisLine={false} unit="%" tick={{ ...axisTick, fill: "#fb7185" }} />
+              <Tooltip {...tooltipProps} />
+              <Legend {...legendProps} />
+              <Bar yAxisId="p" dataKey="late" name="% paid 15+ days late" fill="#fb7185" fillOpacity={0.3} radius={[6, 6, 0, 0]} />
               <Line yAxisId="d" dataKey="dso" name="Collection time (days)" stroke="#6366f1" strokeWidth={3} dot={{ r: 3 }} />
             </ComposedChart>
           </ResponsiveContainer>
@@ -152,11 +163,11 @@ export function Accuracy() {
         {data.insights.actions.length === 0 ? (
           <Empty icon={<TrendingUp className="size-6" />} title="No actions yet" body="Send a few reminders from the Today page - results will show up here." />
         ) : (
-          <div className="divide-y line">
+          <div className="divide-y divide-[var(--line)]">
             {data.insights.actions.map((a) => (
               <div key={a.kind} className="flex items-center gap-4 px-5 py-4">
                 <div className="flex-1"><div className="text-sm font-medium ink">{a.title}</div><div className="text-xs ink-3">{a.sent} sent</div></div>
-                <div className="text-right text-sm"><div className="font-semibold num ink">{a.success_rate == null ? "Waiting…" : pct(a.success_rate)}</div><div className="text-xs ink-3">paid within 10 days</div></div>
+                <div className="text-right text-sm"><div className="font-semibold num ink">{a.success_rate == null ? "Waiting…" : pct(a.success_rate)}</div><div className="text-xs ink-3">{a.success_rate == null ? "result in ~10 days" : "paid within 10 days"}</div></div>
               </div>
             ))}
             <div className="px-5 py-4 text-sm ink-2">{data.insights.actions_taken} actions taken · {inrShort(data.insights.recovered_after_action)} recorded as collected</div>

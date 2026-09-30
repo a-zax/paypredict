@@ -161,14 +161,20 @@ def reasons_for(row: dict, deltas: dict, top: int = 3) -> list[str]:
 
 
 # ------------------------------------------------------------------ messages
+MONTHS = {
+    "hi": ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"],
+    "mr": ["जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून", "जुलै", "ऑगस्ट", "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"],
+}
+SUBJECT = {"en": "Invoice {inv} - {amt}", "hi": "इनवॉइस {inv} - {amt}", "mr": "इनव्हॉइस {inv} - {amt}"}
+UDYAM_LABEL = {"en": "Udyam Registration No.", "hi": "उद्यम पंजीकरण सं.", "mr": "उद्यम नोंदणी क्र."}
 SIGN = {"en": "Regards", "hi": "सादर", "mr": "आपला विश्वासू"}
 T = {
     "REMINDER": {
         "en": "Dear {buyer} team,\n\nA gentle reminder that invoice {inv} for {amt} {due_phrase_en}. "
-              "Kindly schedule the payment, and let us know if you need any documents from our side.\n\n{sign},\n{seller}",
-        "hi": "नमस्ते {buyer} टीम,\n\nविनम्र स्मरण: इनवॉइस {inv} ({amt}) {due_phrase_hi}। कृपया भुगतान निर्धारित करें। "
+              "{ask_en}, and let us know if you need any documents from our side.\n\n{sign},\n{seller}",
+        "hi": "नमस्ते {buyer} टीम,\n\nविनम्र स्मरण: इनवॉइस {inv} ({amt}) {due_phrase_hi}। {ask_hi}। "
               "किसी दस्तावेज़ की आवश्यकता हो तो बताएं।\n\n{sign},\n{seller}",
-        "mr": "नमस्कार {buyer} टीम,\n\nनम्र आठवण: इनव्हॉइस {inv} ({amt}) {due_phrase_mr}. कृपया पेमेंट नियोजित करा. "
+        "mr": "नमस्कार {buyer} टीम,\n\nनम्र आठवण: इनव्हॉइस {inv} ({amt}) {due_phrase_mr}. {ask_mr}. "
               "कोणतीही कागदपत्रे हवी असल्यास कळवा.\n\n{sign},\n{seller}",
     },
     "EARLY_PAY_OFFER": {
@@ -182,13 +188,13 @@ T = {
     "LEGAL_NUDGE": {
         "en": "Dear {buyer} Accounts team,\n\nInvoice {inv} for {amt} was raised on {inv_date}. As a Udyam-registered MSE "
               "supplier, we request payment within the 45-day limit under Section 15 of the MSMED Act, 2006. Delayed "
-              "payments attract compound interest under Section 16{tax_en}. Kindly release the payment by {pay_by}.\n\n{sign},\n{seller}",
+              "payments attract compound interest under Section 16{tax_en}. Kindly release the payment by {pay_by}.\n\n{sign},\n{seller}{udyam}",
         "hi": "आदरणीय {buyer} लेखा टीम,\n\nइनवॉइस {inv} ({amt}) {inv_date} को जारी हुआ था। Udyam-पंजीकृत सूक्ष्म/लघु आपूर्तिकर्ता "
               "होने के नाते, MSMED अधिनियम 2006 की धारा 15 के तहत 45 दिनों में भुगतान का अनुरोध है। देरी पर धारा 16 के तहत "
-              "चक्रवृद्धि ब्याज देय है{tax_hi}। कृपया {pay_by} तक भुगतान करें।\n\n{sign},\n{seller}",
+              "चक्रवृद्धि ब्याज देय है{tax_hi}। कृपया {pay_by} तक भुगतान करें।\n\n{sign},\n{seller}{udyam}",
         "mr": "आदरणीय {buyer} लेखा टीम,\n\nइनव्हॉइस {inv} ({amt}) {inv_date} रोजी जारी झाले. Udyam-नोंदणीकृत सूक्ष्म/लघु "
               "पुरवठादार म्हणून, MSMED कायदा 2006 कलम 15 नुसार 45 दिवसांत पेमेंटची विनंती आहे. उशीर झाल्यास कलम 16 नुसार "
-              "चक्रवाढ व्याज देय आहे{tax_mr}. कृपया {pay_by} पर्यंत पेमेंट करावे.\n\n{sign},\n{seller}",
+              "चक्रवाढ व्याज देय आहे{tax_mr}. कृपया {pay_by} पर्यंत पेमेंट करावे.\n\n{sign},\n{seller}{udyam}",
     },
     "RESOLVE_DISPUTE": {
         "en": "Dear {buyer} team,\n\nWe understand there's an open query on invoice {inv} ({amt}). Could we do a quick "
@@ -209,11 +215,11 @@ T = {
     "SAMADHAAN": {
         "en": "Dear {buyer} Accounts team,\n\nInvoice {inv} for {amt} (due {due}) remains unpaid beyond the statutory 45-day "
               "period. Unless the payment with interest under Section 16 of the MSMED Act is received by {pay_by}, we will "
-              "file a reference with the MSE Facilitation Council through the MSME Samadhaan portal.\n\n{sign},\n{seller}",
+              "file a reference with the MSE Facilitation Council through the MSME Samadhaan portal.\n\n{sign},\n{seller}{udyam}",
         "hi": "आदरणीय {buyer} लेखा टीम,\n\nइनवॉइस {inv} ({amt}, देय {due}) वैधानिक 45 दिनों के बाद भी बकाया है। {pay_by} तक MSMED "
-              "धारा 16 के ब्याज सहित भुगतान न मिलने पर हम MSME समाधान पोर्टल के माध्यम से MSEFC में आवेदन करेंगे।\n\n{sign},\n{seller}",
+              "धारा 16 के ब्याज सहित भुगतान न मिलने पर हम MSME समाधान पोर्टल के माध्यम से MSEFC में आवेदन करेंगे।\n\n{sign},\n{seller}{udyam}",
         "mr": "आदरणीय {buyer} लेखा टीम,\n\nइनव्हॉइस {inv} ({amt}, देय {due}) वैधानिक 45 दिवसांनंतरही थकीत आहे. {pay_by} पर्यंत "
-              "MSMED कलम 16 च्या व्याजासह पेमेंट न मिळाल्यास आम्ही MSME समाधान पोर्टलद्वारे MSEFC कडे अर्ज करू.\n\n{sign},\n{seller}",
+              "MSMED कलम 16 च्या व्याजासह पेमेंट न मिळाल्यास आम्ही MSME समाधान पोर्टलद्वारे MSEFC कडे अर्ज करू.\n\n{sign},\n{seller}{udyam}",
     },
 }
 INTERNAL = {
@@ -225,20 +231,35 @@ INTERNAL = {
 }
 
 
+def fmt_date(d: date, lang: str) -> str:
+    """05 Aug 2026 / 05 अगस्त 2026 / 05 ऑगस्ट 2026 - month names in the message's own language."""
+    return d.strftime("%d %b %Y") if lang not in MONTHS else f"{d.day:02d} {MONTHS[lang][d.month - 1]} {d.year}"
+
+
+def subject(number: str, amount: float, lang: str) -> str:
+    return SUBJECT[lang].format(inv=number, amt=inr(amount))
+
+
 def draft(action: str, inv: dict, org: dict, lang: str, today: date) -> str:
     if action in INTERNAL:
         return INTERNAL[action]
     pay_by = max(inv["due_date"], today + timedelta(days=7))
     overdue = (today - inv["due_date"]).days
     gov = inv["is_government"]
-    fmt = lambda d: d.strftime("%d %b %Y")
+    fmt = lambda d: fmt_date(d, lang)
+    late_en = f" ({overdue} day{'s' if overdue != 1 else ''} ago)"
+    udyam = org.get("udyam_number") if org.get("udyam_registered", True) else ""
     return T[action][lang].format(
         buyer=inv["buyer_name"], inv=inv["number"], amt=inr(inv["amount"]), due=fmt(inv["due_date"]),
         inv_date=fmt(inv["invoice_date"]), pay_by=fmt(pay_by), disc=f"{org['early_pay_discount']:.0%}",
         seller=org["sender_name"] or org["name"], sign=SIGN[lang],
-        due_phrase_en=(f"was due on {fmt(inv['due_date'])}" if overdue > 0 else f"is due on {fmt(inv['due_date'])}"),
-        due_phrase_hi=(f"की भुगतान तिथि {fmt(inv['due_date'])} थी" if overdue > 0 else f"की भुगतान तिथि {fmt(inv['due_date'])} है"),
-        due_phrase_mr=(f"ची देय तारीख {fmt(inv['due_date'])} होती" if overdue > 0 else f"ची देय तारीख {fmt(inv['due_date'])} आहे"),
+        due_phrase_en=(f"was due on {fmt(inv['due_date'])}{late_en}" if overdue > 0 else f"is due on {fmt(inv['due_date'])}"),
+        due_phrase_hi=(f"की भुगतान तिथि {fmt(inv['due_date'])} थी ({overdue} दिन पहले)" if overdue > 0 else f"की भुगतान तिथि {fmt(inv['due_date'])} है"),
+        due_phrase_mr=(f"ची देय तारीख {fmt(inv['due_date'])} होती ({overdue} दिवसांपूर्वी)" if overdue > 0 else f"ची देय तारीख {fmt(inv['due_date'])} आहे"),
+        ask_en=f"Kindly release the payment by {fmt(pay_by)}" if overdue > 0 else "Kindly schedule the payment",
+        ask_hi=f"कृपया {fmt(pay_by)} तक भुगतान करें" if overdue > 0 else "कृपया भुगतान निर्धारित करें",
+        ask_mr=f"कृपया {fmt(pay_by)} पर्यंत पेमेंट करावे" if overdue > 0 else "कृपया पेमेंट नियोजित करा",
+        udyam=f"\n{UDYAM_LABEL[lang]}: {udyam}" if udyam else "",
         tax_en="" if gov else ", and under Section 43B(h) of the Income-tax Act the expense is deductible only in the year of actual payment",
         tax_hi="" if gov else " और आयकर अधिनियम धारा 43B(h) के अनुसार खर्च की कटौती केवल भुगतान वर्ष में मिलेगी",
         tax_mr="" if gov else " आणि आयकर कायदा कलम 43B(h) नुसार खर्चाची वजावट फक्त पेमेंटच्या वर्षातच मिळेल",

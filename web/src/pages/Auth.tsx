@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, ArrowRight, Check, Eye, EyeOff, Languages, Moon, Scale, ShieldCheck, Sparkles, Sun, Target, Zap } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, Eye, EyeOff, Languages, Moon, ShieldCheck, Sparkles, Sun } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Segmented } from "../components/ui";
@@ -10,50 +10,125 @@ import { useTheme, usePageTitle } from "../lib/theme";
 type Mode = "login" | "signup";
 
 // ------------------------------------------------------------------ live product preview (left panel)
-const EXAMPLES = [
-  { name: "Kaveri Foods Pvt Ltd", initials: "KF", amt: "₹4,85,100", chip: "Likely 18 days late", chipCls: "bg-rose-500/20 text-rose-100",
-    icon: <Scale className="size-3.5" />, action: "Remind them of the 45-day payment law", why: "Paid their last 3 invoices ~24 days late", hue: 350 },
-  { name: "Deccan Electricals Ltd", initials: "DE", amt: "₹2,53,200", chip: "Might be late · 41%", chipCls: "bg-amber-400/20 text-amber-100",
-    icon: <Zap className="size-3.5" />, action: "Offer 1% off for paying this week", why: "Cheaper than 21 days of overdraft interest", hue: 260 },
-  { name: "Narmada Infra Projects", initials: "NI", amt: "₹3,12,500", chip: "Get cash today", chipCls: "bg-sky-400/20 text-sky-100",
-    icon: <Target className="size-3.5" />, action: "Sell this invoice on TReDS", why: "Buyer is registered; saves ₹2,140 vs waiting", hue: 200 },
-];
+// One invoice going round the whole loop: predict -> remind (in 3 languages) -> pay by UPI -> paid. Fictional names.
+type L3 = "en" | "hi" | "mr";
+const MSG: Record<L3, string> = {
+  en: "Dear Kaveri Foods team,\nA gentle reminder that invoice INV-2041 for ₹4,85,100 is due on 12 Sep. Kindly schedule the payment.",
+  hi: "नमस्ते Kaveri Foods टीम,\nविनम्र स्मरण: इनवॉइस INV-2041 (₹4,85,100) की भुगतान तिथि 12 सितंबर है। कृपया भुगतान निर्धारित करें।",
+  mr: "नमस्कार Kaveri Foods टीम,\nनम्र आठवण: इनव्हॉइस INV-2041 (₹4,85,100) ची देय तारीख 12 सप्टेंबर आहे. कृपया पेमेंट नियोजित करा.",
+};
+const PAY_LINE: Record<L3, string> = { en: "Pay instantly by UPI", hi: "UPI से तुरंत भुगतान करें", mr: "UPI द्वारे लगेच पेमेंट करा" };
+const STEPS = ["Predict", "Remind", "Pay", "Paid"];
+const STEP_MS = 3800;
+
+function QrGlyph() {   // decorative only - not a scannable code
+  const cells = "1110111010110101101011100100111011010101101100110111000101110101101001011011101010111001101";
+  return (
+    <svg viewBox="0 0 11 11" className="size-16 rounded-md bg-white p-1" aria-hidden="true">
+      {cells.split("").map((c, i) => {
+        const x = i % 11, y = Math.floor(i / 11);
+        const corner = (x < 4 && y < 4) || (x > 6 && y < 4) || (x < 4 && y > 6);   // keep the three finder corners clean
+        return c === "1" && !corner && <rect key={i} x={x} y={y} width="1" height="1" fill="#0f172a" />;
+      })}
+      {[[0, 0], [8, 0], [0, 8]].map(([x, y]) => (
+        <g key={`${x}${y}`}><rect x={x + 0.35} y={y + 0.35} width="2.3" height="2.3" fill="none" stroke="#0f172a" strokeWidth="0.7" /><rect x={x + 1} y={y + 1} width="1" height="1" fill="#0f172a" /></g>
+      ))}
+    </svg>
+  );
+}
 
 function LivePreview() {
-  const [i, setI] = useState(0);
-  useEffect(() => { const t = setInterval(() => setI((x) => (x + 1) % EXAMPLES.length), 3800); return () => clearInterval(t); }, []);
-  const e = EXAMPLES[i];
+  const [step, setStep] = useState(0);
+  const [lang, setLang] = useState<L3>("en");
+  const [paused, setPaused] = useState(false);
+  const still = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  useEffect(() => {
+    if (paused || still) return;
+    const t = setInterval(() => setStep((x) => (x + 1) % STEPS.length), STEP_MS);
+    return () => clearInterval(t);
+  }, [paused, still]);
+  const pick = (k: number) => { setStep(k); setPaused(true); };
+
   return (
-    <div className="relative" aria-hidden="true">
-      <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-        <div className="text-xs font-medium text-white/70">Next 4 weeks</div>
-        <div className="mt-1 text-[15px] leading-snug">You'll likely collect <strong>₹1.94 Cr</strong>, that's <strong className="underline decoration-white/40 underline-offset-2">₹1.31 Cr less</strong> than your due dates suggest.</div>
-        <svg viewBox="0 0 200 36" className="mt-3 h-9 w-full"><path d="M0 34 C40 30 70 22 110 17 S170 8 200 5" fill="none" stroke="rgba(255,255,255,.45)" strokeWidth="2" strokeDasharray="4 4" />
-          <path d="M0 34 C40 33 80 29 120 24 S175 17 200 14" fill="none" stroke="#fff" strokeWidth="2.5" /></svg>
+    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+      <div className="flex items-center justify-between gap-3">
+        <ol className="flex items-center gap-1 text-[11px] font-medium">
+          {STEPS.map((l, k) => (
+            <li key={l} className="flex items-center gap-1">
+              <button onClick={() => pick(k)} className={cx("focus-ring rounded-full px-2.5 py-1 transition", k === step ? "bg-white text-brand-700" : "bg-white/10 text-white/75 hover:bg-white/20")}>{k + 1}. {l}</button>
+              {k < STEPS.length - 1 && <span className="text-white/40">›</span>}
+            </li>
+          ))}
+        </ol>
       </div>
-      <div className="relative mt-3 h-[150px]">
-        <AnimatePresence mode="popLayout">
-          <motion.div key={i} initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.98 }}
-            transition={{ type: "spring", damping: 26, stiffness: 260 }}
-            className="absolute inset-x-0 rounded-2xl border border-white/15 bg-white/[0.13] p-4 backdrop-blur">
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl text-xs font-semibold" style={{ background: `linear-gradient(135deg, hsl(${e.hue} 70% 60%), hsl(${e.hue + 40} 70% 45%))` }}>{e.initials}</span>
-              <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{e.name}</div><span className={cx("mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium", e.chipCls)}>{e.chip}</span></div>
-              <div className="text-sm font-semibold">{e.amt}</div>
-            </div>
-            <div className="mt-3 rounded-xl bg-white/10 px-3 py-2">
-              <div className="flex items-center gap-1.5 text-[13px] font-semibold">{e.icon}{e.action}</div>
-              <div className="text-[11px] text-white/70">Why? {e.why}</div>
-            </div>
-            <div className="mt-2.5 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#1faa53] px-2.5 py-1 text-[11px] font-medium">Send on WhatsApp</span>
-              <span className="text-[11px] text-white/60">with a UPI pay link</span>
-            </div>
+
+      {/* The frame (blur, border, tint) never moves - only the content inside cross-fades. Animating a blurred,
+          translucent card made the browser re-blur every frame and briefly stacked two tints, which read as jitter. */}
+      <div className="relative mt-3 h-[236px] overflow-hidden rounded-2xl border border-white/15 bg-white/[0.12] backdrop-blur sm:h-[212px]">
+        <AnimatePresence initial={false}>
+          <motion.div key={step} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }} style={{ willChange: "transform, opacity" }}
+            className="absolute inset-0 p-4">
+            {step === 0 && (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-rose-400 to-orange-500 text-xs font-semibold">KF</span>
+                  <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">Kaveri Foods Pvt Ltd</div><div className="text-[11px] text-white/70">INV-2041 · due 12 Sep, in 5 days</div></div>
+                  <div className="text-base font-semibold">₹4,85,100</div>
+                </div>
+                <div className="mt-4 rounded-xl bg-white/10 p-3">
+                  <div className="flex items-center justify-between text-[13px]"><span className="font-semibold">AI prediction</span><span className="rounded-full bg-rose-500/25 px-2 py-0.5 text-[11px] font-medium text-rose-100">Likely 18 days late</span></div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/15"><motion.div className="h-full w-[78%] origin-left rounded-full bg-gradient-to-r from-amber-300 to-rose-400" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }} /></div>
+                  <div className="mt-2 text-[11px] text-white/75">Why? Paid their last 3 invoices ~24 days late · this bill is 2× their usual order</div>
+                </div>
+                <div className="mt-3 flex items-center gap-2 text-[12px]">
+                  <span className="whitespace-nowrap rounded-md bg-white/10 px-2 py-0.5">Due 12 Sep</span><ArrowRight className="size-3.5 text-white/60" />
+                  <span className="whitespace-nowrap rounded-md bg-rose-500/25 px-2 py-0.5 text-rose-100">Expected ~30 Sep</span>
+                  <span className="hidden text-white/70 sm:inline">· worth a reminder now</span>
+                </div>
+              </>
+            )}
+            {step === 1 && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-semibold">Reminder, written for you</span>
+                  <span className="flex gap-0.5 rounded-lg bg-white/10 p-0.5 text-[11px]">
+                    {(["en", "hi", "mr"] as L3[]).map((l) => (
+                      <button key={l} onClick={() => { setLang(l); setPaused(true); }} className={cx("focus-ring rounded-md px-2 py-0.5", lang === l ? "bg-white text-brand-700" : "text-white/80")}>
+                        {l === "en" ? "English" : l === "hi" ? "हिंदी" : "मराठी"}
+                      </button>
+                    ))}
+                  </span>
+                </div>
+                <div className="mt-3 max-w-[92%] rounded-2xl rounded-tl-sm bg-[#1faa53]/90 p-3 text-[12.5px] leading-relaxed shadow-lg">
+                  <p className="whitespace-pre-line">{MSG[lang]}</p>
+                  <p className="mt-1.5 text-white/85 underline decoration-white/40">{PAY_LINE[lang]}: paypredict.app/pay/…</p>
+                </div>
+                <div className="mt-2 text-[11px] text-white/70">Sent in one tap on WhatsApp - before it slips, not after.</div>
+              </>
+            )}
+            {step === 2 && (
+              <div className="flex h-full items-center gap-4">
+                <div className="flex-1">
+                  <div className="text-[11px] text-white/70">Customer taps the link</div>
+                  <div className="mt-1 text-sm">Payment request from <strong>Sahyadri Packaging</strong></div>
+                  <div className="mt-1 text-2xl font-semibold">₹4,85,100</div>
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-[12px] font-semibold text-brand-700">Pay with UPI <ArrowRight className="size-3.5" /></div>
+                  <div className="mt-2 text-[11px] text-white/70">GPay · PhonePe · Paytm · straight to your bank, no fees</div>
+                </div>
+                <QrGlyph />
+              </div>
+            )}
+            {step === 3 && (
+              <div className="flex h-full flex-col items-center justify-center text-center">
+                <motion.span initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15, type: "spring", damping: 18, stiffness: 220 }}
+                  className="grid size-12 place-items-center rounded-full bg-emerald-400 text-emerald-950"><Check className="size-7" /></motion.span>
+                <div className="mt-3 text-base font-semibold">Paid ₹4,85,100 on 14 Sep</div>
+                <div className="mt-1 text-[12px] text-white/80">16 days sooner than the AI predicted · ₹2,977 overdraft interest saved</div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
-      </div>
-      <div className="mt-2 flex justify-center gap-1.5">
-        {EXAMPLES.map((_, k) => <span key={k} className={cx("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-white" : "w-1.5 bg-white/40")} />)}
       </div>
     </div>
   );
@@ -112,6 +187,7 @@ export function AuthPage({ mode: initial }: { mode: Mode }) {
   const { login, signup, demo } = useAuthActions();
   const { dark, toggle } = useTheme();
   const [mode, setMode] = useState<Mode>(initial);
+  const [showForm, setShowForm] = useState(initial === "signup");   // most visitors want the demo; the form waits until asked
   const [f, setF] = useState({ name: "", business_name: "", email: "", password: "" });
   const [err, setErr] = useState("");
   const [touched, setTouched] = useState(false);
@@ -131,7 +207,7 @@ export function AuthPage({ mode: initial }: { mode: Mode }) {
     return () => clearInterval(t);
   }, [demoBusy]);
 
-  const switchMode = (m: Mode) => { setMode(m); setErr(""); setTouched(false); nav(m === "login" ? "/login" : "/signup", { replace: true }); };
+  const switchMode = (m: Mode) => { setMode(m); setShowForm(true); setErr(""); setTouched(false); nav(m === "login" ? "/login" : "/signup", { replace: true }); };
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
   const emailBad = touched && !!f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email);
 
@@ -162,17 +238,17 @@ export function AuthPage({ mode: initial }: { mode: Mode }) {
         <div className="relative hidden items-center gap-2.5 lg:flex">
           <img src="/favicon.svg" alt="" className="size-8 rounded-lg ring-2 ring-white/20" /><span className="text-lg font-semibold tracking-tight">PayPredict</span>
         </div>
-        <div className="relative mx-auto w-full max-w-lg lg:my-auto lg:py-6">
+        <div className="relative mx-auto w-full max-w-lg lg:my-auto lg:py-6 2xl:max-w-xl">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium"><Sparkles className="size-3.5" />AI credit manager for Indian MSMEs</span>
-          <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-[38px] sm:leading-[1.1] lg:text-[34px] xl:text-[40px]">Know which customers will pay late. Get paid before it hurts.</h2>
+          <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-tight sm:text-[38px] sm:leading-[1.1] lg:text-[34px] xl:text-[40px] 2xl:text-[46px]">Know which customers will pay late. Get paid before it hurts.</h2>
           <p className="mt-3 text-base text-white/80 xl:text-lg">PayPredict learns how each customer really pays, tells you who to chase today, and writes the message for you.</p>
           <div className="mt-6 xl:mt-8"><LivePreview /></div>
           <dl className="mt-5 grid grid-cols-3 gap-3 xl:mt-7">
-            {[["±9 days", "payment-date error (±21 if you trust due dates)*"], ["1 tap", "WhatsApp message with UPI pay link"], ["3", "languages: English, हिंदी, मराठी"]].map(([v, l]) => (
+            {[["2×", "more accurate payment dates than trusting due dates*"], ["1 tap", "WhatsApp reminder with a UPI pay link"], ["3", "languages: English, हिंदी, मराठी"]].map(([v, l]) => (
               <div key={l} className="rounded-xl bg-white/10 p-3"><dt className="text-xl font-semibold num sm:text-2xl">{v}</dt><dd className="mt-0.5 text-[11px] leading-snug text-white/75">{l}</dd></div>
             ))}
           </dl>
-          <p className="mt-3 text-[11px] text-white/55">*Back-tested on 12,000 sample invoices from a fictional business.</p>
+          <p className="mt-3 text-[11px] text-white/55">*Typical error ±9 days vs ±21 days, back-tested on 12,000 sample invoices from a fictional business.</p>
         </div>
         <p className="relative mt-8 text-center text-xs text-white/55 lg:mt-0 lg:text-left">Built for IES MCRC Hackathon 4.0 · FinTech AI</p>
       </section>
@@ -192,25 +268,33 @@ export function AuthPage({ mode: initial }: { mode: Mode }) {
           </span>
           <h1 className="text-[28px] font-semibold leading-tight tracking-tight ink">{mode === "login" ? "Welcome to PayPredict" : "Get paid faster, starting today"}</h1>
           <p className="mt-1.5 ink-2">{mode === "login"
-            ? "Find out which customers will pay late, and what to do about each one. Try it now, or log in."
+            ? "Find out which customers will pay late, and what to do about each one. See it on a sample business first."
             : "Free account. Upload your Tally or Excel ledger, or explore with sample data."}</p>
 
           {/* Primary action: the demo */}
           <button onClick={tryDemo} disabled={demoBusy} aria-busy={demoBusy}
-            className="focus-ring group relative mt-7 flex w-full items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 to-violet-600 p-4 text-left text-white shadow-lg shadow-brand-600/25 transition hover:shadow-xl hover:shadow-brand-600/30 disabled:cursor-wait">
+            className="focus-ring group relative mt-7 flex w-full items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 to-violet-600 p-5 text-left text-white shadow-lg shadow-brand-600/25 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-600/30 disabled:cursor-wait">
             {demoBusy && <motion.span className="absolute inset-y-0 left-0 bg-white/15" initial={{ width: "0%" }} animate={{ width: "92%" }} transition={{ duration: serverReady.current ? 12 : 40, ease: "easeOut" }} />}
-            <span className="relative grid size-11 shrink-0 place-items-center rounded-xl bg-white/20">
+            <span className="relative grid size-12 shrink-0 place-items-center rounded-xl bg-white/20">
               {demoBusy ? <span className="size-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <Sparkles className="size-5" />}
             </span>
             <span className="relative flex-1">
-              <span className="block text-[15px] font-semibold">{demoBusy ? demoStatus : "Try the live demo"}</span>
-              <span className="block text-xs text-white/80">{demoBusy ? "Hang tight, it's worth it" : "No signup · a sample Pune business with 220 customers"}</span>
+              <span className="block text-lg font-semibold">{demoBusy ? demoStatus : "Try the live demo"}</span>
+              <span className="block text-[13px] text-white/85">{demoBusy ? "Hang tight, it's worth it" : "Opens in seconds · no signup · a sample Pune business with 220 customers"}</span>
             </span>
             {!demoBusy && <ArrowRight className="relative size-5 transition group-hover:translate-x-1" />}
           </button>
 
-          <div className="my-6 flex items-center gap-3 text-xs ink-3"><span className="h-px flex-1 bg-[var(--line)]" />or with your own account<span className="h-px flex-1 bg-[var(--line)]" /></div>
+          {!showForm && err && <p role="alert" className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"><AlertTriangle className="mt-0.5 size-4 shrink-0" />{err}</p>}
 
+          <div className="my-6 flex items-center gap-3 text-xs ink-3"><span className="h-px flex-1 bg-[var(--line)]" />or use your own data<span className="h-px flex-1 bg-[var(--line)]" /></div>
+
+          {!showForm ? (
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => switchMode("login")} className="focus-ring h-11 rounded-xl border line text-sm font-medium ink transition hover:bg-[var(--surface-2)]">Log in</button>
+              <button onClick={() => switchMode("signup")} className="focus-ring h-11 rounded-xl bg-[var(--ink)] text-sm font-medium text-[var(--bg)] transition hover:opacity-90">Create free account</button>
+            </div>
+          ) : (<>
           <div className="flex justify-center">
             <Segmented value={mode} onChange={switchMode} options={[{ value: "login", label: "Log in" }, { value: "signup", label: "Create account" }]} />
           </div>
@@ -244,6 +328,7 @@ export function AuthPage({ mode: initial }: { mode: Mode }) {
               {mode === "login" ? "Log in" : "Create free account"}
             </button>
           </form>
+          </>)}
 
           <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs ink-2">
             {[[<ShieldCheck key="s" className="size-3.5 text-emerald-600" />, "Your data stays private"], [<Check key="c" className="size-3.5 text-emerald-600" />, "Free, no card needed"], [<Languages key="l" className="size-3.5 text-emerald-600" />, "English · हिंदी · मराठी"]].map(([icon, t]) => (

@@ -14,7 +14,8 @@ function Slider({ label, hint, value, min, max, step, fmt, onChange }: { label: 
   return (
     <div>
       <div className="flex items-center justify-between text-sm"><span className="font-medium ink">{label}</span><span className="font-semibold num text-brand-600">{fmt(value)}</span></div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="mt-2 w-full accent-[#4f46e5]" />
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))}
+        className="range mt-3 w-full" style={{ "--p": `${((value - min) / (max - min)) * 100}%` } as React.CSSProperties} />
       <p className="text-xs ink-2">{hint}</p>
     </div>
   );
@@ -33,6 +34,8 @@ export function Settings() {
   useEffect(() => { if (me) setO(me.org); }, [me]);
   if (!o || !me) return null;
   const set = <K extends keyof Org>(k: K, v: Org[K]) => setO({ ...o, [k]: v });
+  const demo = !!me.org.is_demo;
+  const dirty = JSON.stringify(o) !== JSON.stringify(me.org);
 
   async function save() {
     setSaving(true);
@@ -58,7 +61,14 @@ export function Settings() {
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight ink sm:text-3xl">Settings</h1>
+      {demo && (
+        <div className="mt-4 rounded-2xl bg-amber-100 px-4 py-3 text-sm text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
+          This is the shared demo, so settings are view-only for everyone. Create your own free account to change them.
+        </div>
+      )}
 
+      {/* One form, one save bar: a disabled fieldset makes the whole thing read-only for the shared demo. */}
+      <fieldset disabled={demo} className="min-w-0">
       <Card className="mt-6 space-y-4 p-5 sm:p-6">
         <h2 className="font-semibold ink">Your business</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -86,7 +96,6 @@ export function Settings() {
         <Input label="Business address" value={o.address} onChange={(e) => set("address", e.target.value)} />
         <Slider label="RBI Bank Rate" hint={<>Buyers owe 3× this rate, compounded monthly, on payments beyond 45 days (<Term k="MSMED" />). Check the current rate on rbi.org.in.</>}
           value={o.bank_rate} min={0.03} max={0.1} step={0.0025} fmt={(v) => `${(v * 100).toFixed(2)}% → ${(v * 300).toFixed(2)}% interest`} onChange={(v) => set("bank_rate", v)} />
-        <div className="flex justify-end"><Button variant="primary" loading={saving} onClick={save}>Save changes</Button></div>
       </Card>
 
       <Card className="mt-4 space-y-6 p-5 sm:p-6">
@@ -96,32 +105,44 @@ export function Settings() {
         <Slider label="Early-payment discount you're willing to offer" hint="Offered only when it's cheaper than waiting." value={o.early_pay_discount} min={0.005} max={0.03} step={0.0025} fmt={(v) => `${(v * 100).toFixed(1)}%`} onChange={(v) => set("early_pay_discount", v)} />
         <Toggle checked={o.relationship_first} onChange={(v) => set("relationship_first", v)} label="Relationship-first mode"
           hint="For important private customers, prefer a friendly discount offer over legal language." />
-        <div className="flex justify-end"><Button variant="primary" loading={saving} onClick={save}>Save changes</Button></div>
       </Card>
+
+      </fieldset>
 
       <Card className="mt-4 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:p-6">
         <div className="flex-1"><h2 className="font-semibold ink">Help</h2><p className="text-sm ink-2">Replay the guided tour of every feature - takes about 2 minutes.</p></div>
         <Button icon={<Compass className="size-4" />} onClick={() => start(0)}>Restart guided tour</Button>
       </Card>
 
-      <Card className="mt-4 space-y-4 p-5 sm:p-6">
+      {!demo && <Card className="mt-4 space-y-4 p-5 sm:p-6">
         <h2 className="font-semibold ink">Data</h2>
         <div className="flex flex-wrap gap-2">
           <Button icon={<Upload className="size-4" />} onClick={() => nav("/welcome")}>Upload a new ledger</Button>
           <Button variant="ghost" icon={<Trash2 className="size-4" />} className="text-rose-600" onClick={() => setConfirmReset(true)}>Delete all my data</Button>
         </div>
         <p className="text-xs ink-3">Uploading again adds new invoices and updates existing ones (matched by customer + invoice number). Your data is private to your account.</p>
-      </Card>
+      </Card>}
 
       <Card className="mt-4 flex items-start gap-3 p-5 sm:p-6">
         <KeyRound className="mt-0.5 size-5 text-violet-500" />
         <div className="text-sm">
-          <div className="font-medium ink">AI assistant: {me.assistant_enabled ? <span className="text-emerald-600">connected</span> : <span className="text-amber-600">not configured</span>}</div>
-          <p className="ink-2">Powered by Claude. Set <code className="rounded bg-[var(--surface-2)] px-1">ANTHROPIC_API_KEY</code> on the server to enable it.</p>
+          <div className="font-medium ink">AI assistant: {me.assistant_enabled ? <span className="text-emerald-600">on</span> : <span className="text-amber-600">off</span>}</div>
+          <p className="ink-2">{me.assistant_enabled ? "Powered by Claude. Ask anything about your customers and cash from the Ask PayPredict button." : "Ask PayPredict isn't switched on for this installation yet. Everything else works without it."}</p>
+          {!me.assistant_enabled && <p className="mt-1 text-xs ink-3">For whoever runs the server: set <code className="rounded bg-[var(--surface-2)] px-1">ANTHROPIC_API_KEY</code> and restart.</p>}
         </div>
       </Card>
 
       <div className="mt-6 lg:hidden"><Button variant="ghost" icon={<LogOut className="size-4" />} onClick={logout}>Log out</Button></div>
+
+      {dirty && !demo && (
+        <div className="sticky bottom-20 z-10 mt-6 flex items-center justify-between gap-3 rounded-2xl border line bg-[var(--surface)] p-3 pl-4 shadow-[var(--shadow-pop)] lg:bottom-4">
+          <span className="text-sm ink-2">You have unsaved changes</span>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setO(me.org)}>Discard</Button>
+            <Button variant="primary" loading={saving} onClick={save}>Save changes</Button>
+          </div>
+        </div>
+      )}
 
       <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title="Delete all data?">
         <p className="text-sm ink-2">This permanently removes every invoice, customer and action for {o.name}. Your login stays. This can't be undone.</p>

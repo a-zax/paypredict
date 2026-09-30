@@ -144,6 +144,8 @@ def login(body: LoginIn, request: Request, s: Session = Depends(get_session)):
 
 
 DEMO_EMAIL = "demo@paypredict.app"
+# The demo pay page shows a scannable QR, but it holds plain text, not a UPI payment link.
+DEMO_QR_TEXT = "PayPredict demo: this QR is a sample. In a real account it opens your UPI app with the amount filled in."
 demo_limiter = RateLimiter(limit=30, window_s=60 * 60)
 _demo_lock = threading.Lock()
 
@@ -202,9 +204,16 @@ class OrgPatch(BaseModel):
     bank_rate: Optional[float] = PField(None, ge=0.01, le=0.2)
 
 
+def no_demo(org: Org, what: str):
+    """The demo business is shared by every visitor: nobody may change what everyone else sees."""
+    if org.is_demo:
+        raise HTTPException(403, f"{what} is turned off in the shared demo. Create your own free account to try it.")
+
+
 @app.patch("/api/org")
 def patch_org(body: OrgPatch, ctx=Depends(current), s: Session = Depends(get_session)):
     _, org = ctx
+    no_demo(org, "Changing settings")
     data = body.model_dump(exclude_none=True)
     if "upi_id" in data:
         data["upi_id"] = data["upi_id"].strip()
@@ -223,11 +232,13 @@ def patch_org(body: OrgPatch, ctx=Depends(current), s: Session = Depends(get_ses
 # ------------------------------------------------------------------ onboarding / import
 @app.post("/api/import/sample")
 def import_sample(ctx=Depends(current), s: Session = Depends(get_session)):
+    no_demo(ctx[1], "Reloading data")
     return S.load_sample(s, ctx[1])
 
 
 @app.post("/api/import/preview")
 async def import_preview(file: UploadFile = File(...), ctx=Depends(current)):
+    no_demo(ctx[1], "Uploading a ledger")
     content = await file.read()
     if len(content) > 15 * 1024 * 1024:
         raise HTTPException(413, "File too large (max 15 MB)")
@@ -251,6 +262,7 @@ async def import_preview(file: UploadFile = File(...), ctx=Depends(current)):
 @app.post("/api/import/commit")
 async def import_commit(file: UploadFile = File(...), mapping: str = Form(...),
                         default_credit_days: int = Form(30), ctx=Depends(current), s: Session = Depends(get_session)):
+    no_demo(ctx[1], "Uploading a ledger")
     df = ingest.read_table(await file.read(), file.filename or "upload.csv")
     rows, issues = ingest.normalise(df, json.loads(mapping), default_credit_days)
     if rows is None:
@@ -267,8 +279,7 @@ def template():
 @app.post("/api/reset")
 def reset(ctx=Depends(current), s: Session = Depends(get_session)):
     _, org = ctx
-    if org.is_demo:
-        raise HTTPException(403, "Deleting data is turned off in the shared demo. Create your own free account to try it.")
+    no_demo(org, "Deleting data")
     S.clear_org(s, org)
     org.onboarded = False
     s.add(org)
@@ -472,6 +483,7 @@ class BuyerPatch(BaseModel):
     contact_person: Optional[str] = None
     is_government: Optional[bool] = None
     treds_onboarded: Optional[bool] = None
+    language: Optional[str] = PField(None, pattern="^(en|hi|mr)?$")
 
 
 @app.patch("/api/buyers/{buyer_id}")
@@ -481,6 +493,8 @@ def patch_buyer(buyer_id: int, body: BuyerPatch, ctx=Depends(current), s: Sessio
     if not b or b.org_id != org.id:
         raise HTTPException(404, "Customer not found")
     data = body.model_dump(exclude_none=True)
+    if {"phone", "email", "contact_person"} & data.keys():
+        no_demo(org, "Saving contact details")   # real people's numbers must not be visible to other demo visitors
     if "phone" in data:
         data["phone"] = ingest.safe_phone(data["phone"])
     for k, v in data.items():
@@ -560,7 +574,7 @@ def pay_page(token: str, offer: bool = False, s: Session = Depends(get_session))
         "amount": inv.amount, "discount": discount, "pay_amount": amount,
         "status": "paid" if inv.paid_date else ("claimed" if inv.claim_at else "due"),
         "overdue_days": max((t - inv.due_date).days, 0), "upi_id": "" if org.is_demo else org.upi_id, "upi_url": upi,
-        "qr_svg": P.qr_svg(upi) if upi else None,
+        "qr_svg": P.qr_svg(upi) if upi else (P.qr_svg(DEMO_QR_TEXT) if org.is_demo else None),
     }
 
 
@@ -605,6 +619,7 @@ class CreditIn(BaseModel):
     new_customer: Optional[str] = PField(None, max_length=120)
     amount: float = PField(gt=0, le=1e10)
     credit_days: int = PField(30, ge=0, le=180)
+    lang: Optional[str] = PField(None, pattern="^(en|hi|mr)$")
 
 
 @app.post("/api/credit-check")
@@ -616,7 +631,7 @@ def credit_check(body: CreditIn, ctx=Depends(current), s: Session = Depends(get_
             raise HTTPException(404, "Customer not found")
     elif not body.new_customer:
         raise HTTPException(400, "Pick a customer or enter a new customer's name")
-    return credit.check_order(s, org, body.buyer_id, body.new_customer, body.amount, body.credit_days)
+    return credit.check_order(s, org, body.buyer_id, body.new_customer, body.amount, body.credit_days, body.lang)
 
 
 # ------------------------------------------------------------------ frontend (built SPA)

@@ -2,9 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Download, FileSpreadsheet, Sparkles, Store, UploadCloud } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Logo } from "../components/Layout";
-import { Badge, Button, Card } from "../components/ui";
+import { Badge, Button, Card, Select } from "../components/ui";
 import { api } from "../lib/api";
 import { useMe } from "../lib/auth";
 import { cx, inrShort } from "../lib/format";
@@ -88,6 +88,7 @@ export function Onboarding() {
   }
 
   const missing = prev?.fields.filter((f) => f.required && !mapping[f.key]) ?? [];
+  if (me?.org.is_demo) return <Navigate to="/" replace />;   // the shared demo is already set up and can't import
 
   return (
     <div className="min-h-full px-4 py-6 sm:px-8">
@@ -100,13 +101,13 @@ export function Onboarding() {
               <h1 className="mt-3 text-3xl font-semibold tracking-tight ink">Welcome{me ? `, ${me.user.name.split(" ")[0]}` : ""}! Let's set up {me?.org.name ?? "your business"}.</h1>
               <p className="mt-2 ink-2">PayPredict learns from your past invoices and payments. How would you like to start?</p>
               <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <button onClick={() => setStage("upload")} className="focus-ring card group p-6 text-left transition hover:-translate-y-0.5 hover:border-brand-300">
+                <button onClick={() => setStage("upload")} className="focus-ring card group flex flex-col items-start p-6 text-left transition hover:-translate-y-0.5 hover:border-brand-300">
                   <span className="grid size-12 place-items-center rounded-2xl bg-brand-600 text-white"><FileSpreadsheet className="size-6" /></span>
                   <h3 className="mt-4 text-lg font-semibold ink">Upload my ledger</h3>
                   <p className="mt-1 text-sm ink-2">Excel or CSV export from Tally, Zoho Books, Busy, Vyapar - or your own sheet.</p>
                   <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-600">Recommended <ArrowRight className="size-4 transition group-hover:translate-x-0.5" /></span>
                 </button>
-                <button onClick={() => finish(api("/import/sample", { method: "POST" }))} className="focus-ring card group p-6 text-left transition hover:-translate-y-0.5 hover:border-brand-300">
+                <button onClick={() => finish(api("/import/sample", { method: "POST" }))} className="focus-ring card group flex flex-col items-start p-6 text-left transition hover:-translate-y-0.5 hover:border-brand-300">
                   <span className="grid size-12 place-items-center rounded-2xl bg-violet-600 text-white"><Store className="size-6" /></span>
                   <h3 className="mt-4 text-lg font-semibold ink">Explore with a sample business</h3>
                   <p className="mt-1 text-sm ink-2">A fictional Pune packaging company with 3 years of invoices from 220 customers. Switch to your data anytime.</p>
@@ -153,18 +154,17 @@ export function Onboarding() {
                   ))}
                 </div>
               )}
-              <Card className="mt-4 divide-y line">
+              <Card className="mt-4 divide-y divide-[var(--line)]">
                 {prev.fields.map((f) => (
                   <div key={f.key} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
                     <div className="flex flex-1 items-center gap-2 text-sm">
                       {mapping[f.key] ? <Check className="size-4 text-emerald-500" /> : <span className={cx("size-4 rounded-full border-2", f.required ? "border-rose-400" : "line")} />}
                       <span className="font-medium ink">{f.label}</span>{f.required && <span className="text-xs ink-3">required</span>}
                     </div>
-                    <select value={mapping[f.key] ?? ""} onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value })}
-                      className="focus-ring h-10 rounded-xl border line bg-[var(--surface)] px-3 text-sm ink sm:w-64">
+                    <Select value={mapping[f.key] ?? ""} onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value })} className="sm:w-64">
                       <option value="">- not in my file -</option>
                       {prev.columns.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    </Select>
                   </div>
                 ))}
               </Card>

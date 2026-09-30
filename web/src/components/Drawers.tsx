@@ -3,8 +3,10 @@ import { BadgeCheck, CalendarCheck2, Check, Copy, FileText, FileWarning, Link2, 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { toast } from "sonner";
+import { tooltipProps } from "../lib/chart";
 import { api, type Customer, type Invoice, type InvoiceDetail, type Lang } from "../lib/api";
-import { cx, d, inr, inrShort, pct } from "../lib/format";
+import { useMe } from "../lib/auth";
+import { cx, d, inr, inrShort, lateness, pct } from "../lib/format";
 import { LANGS } from "../lib/i18n";
 import { useInvoiceActions } from "../lib/useInvoiceActions";
 import { ACTION_ICON, statusLine, withTerms } from "./ActionCard";
@@ -64,8 +66,9 @@ function PaymentTimeline({ inv }: { inv: InvoiceDetail }) {
 }
 
 function InvoicePanel({ id, onCustomer }: { id: number; onCustomer: (id: number) => void }) {
-  const [lang, setLang] = useState<Lang>("en");
-  const { data: inv, isLoading } = useQuery<InvoiceDetail>({ queryKey: ["invoice", id, lang], queryFn: () => api(`/invoices/${id}?lang=${lang}`) });
+  const demo = !!useMe().data?.org.is_demo;   // shared demo: no real phone numbers saved where other visitors can see them
+  const [lang, setLang] = useState<Lang | null>(null);   // null = the customer's language, else the business default
+  const { data: inv, isLoading } = useQuery<InvoiceDetail>({ queryKey: ["invoice", id, lang], queryFn: () => api(`/invoices/${id}${lang ? `?lang=${lang}` : ""}`) });
   const act = useInvoiceActions();
   const [text, setText] = useState("");
   const [modal, setModal] = useState<"promise" | "paid" | null>(null);
@@ -78,9 +81,11 @@ function InvoicePanel({ id, onCustomer }: { id: number; onCustomer: (id: number)
   const pmf = inv.pmf.map((p, i) => ({ name: BIN_LABELS[i], p: Math.round(p * 100) }));
 
   async function savePhone() {
-    await api(`/buyers/${inv!.buyer_id}`, { method: "PATCH", json: { phone } });
-    toast.success("WhatsApp number saved");
-    qc.invalidateQueries({ queryKey: ["invoice", id] });
+    try {
+      await api(`/buyers/${inv!.buyer_id}`, { method: "PATCH", json: { phone } });
+      toast.success("WhatsApp number saved");
+      qc.invalidateQueries({ queryKey: ["invoice", id] });
+    } catch (e: any) { toast.error(e.message); }
   }
 
   return (
@@ -115,7 +120,7 @@ function InvoicePanel({ id, onCustomer }: { id: number; onCustomer: (id: number)
                 <CartesianGrid vertical={false} stroke="var(--line)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} tickLine={false} axisLine={false} />
                 <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v: number) => [`${v}%`, "Chance"]} contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)" }} />
+                <Tooltip {...tooltipProps} formatter={(v: number) => [`${v}%`, "Chance"]} />
                 <Bar dataKey="p" radius={[6, 6, 0, 0]}>{pmf.map((e, i) => <Cell key={i} fill={i >= 3 ? "#f43f5e" : i >= 1 ? "#f59e0b" : "#10b981"} />)}</Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -186,14 +191,17 @@ function InvoicePanel({ id, onCustomer }: { id: number; onCustomer: (id: number)
               <>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium ink">Message</span>
-                  <Segmented size="sm" value={lang} onChange={setLang} options={LANGS.map((l) => ({ value: l.code, label: l.label }))} />
+                  <Segmented size="sm" value={lang ?? inv.message_lang ?? "en"} onChange={setLang} options={LANGS.map((l) => ({ value: l.code, label: l.label }))} />
                 </div>
                 <textarea value={text} onChange={(e) => setText(e.target.value)} rows={8}
                   className="focus-ring mt-3 w-full rounded-xl border line bg-[var(--bg)] p-3.5 text-sm leading-relaxed ink" />
-                {!inv.buyer_phone && (
-                  <div className="mt-3 flex items-end gap-2">
-                    <div className="flex-1"><Input label="Their WhatsApp number" placeholder="98xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} hint="Saved to this customer for next time" /></div>
-                    <Button onClick={savePhone} disabled={phone.replace(/\D/g, "").length < 10} icon={<Phone className="size-4" />}>Save</Button>
+                {!inv.buyer_phone && !demo && (
+                  <div className="mt-3">
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1"><Input label="Their WhatsApp number" placeholder="98xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                      <Button className="h-11" onClick={savePhone} disabled={phone.replace(/\D/g, "").length < 10} icon={<Phone className="size-4" />}>Save</Button>
+                    </div>
+                    <span className="mt-1 block text-xs ink-3">Saved to this customer for next time</span>
                   </div>
                 )}
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -262,6 +270,7 @@ function InvoicePanel({ id, onCustomer }: { id: number; onCustomer: (id: number)
 }
 
 function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) => void }) {
+  const demo = !!useMe().data?.org.is_demo;
   const qc = useQueryClient();
   const { data: buyers } = useQuery<Customer[]>({ queryKey: ["buyers"], queryFn: () => api("/buyers") });
   const { data: hist } = useQuery<{ number: string; invoice_date: string; amount: number; days_late: number }[]>({ queryKey: ["buyer-history", id], queryFn: () => api(`/buyers/${id}/history`) });
@@ -271,9 +280,11 @@ function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) 
   useEffect(() => { if (c) { setPhone(c.phone); setEmail(c.email); } }, [c?.id]);
   if (!c) return <div className="space-y-4 p-6 pt-16"><Skeleton className="h-20" /><Skeleton className="h-64" /></div>;
   const patch = async (body: object, msg = "Saved") => {
-    await api(`/buyers/${id}`, { method: "PATCH", json: body });
-    toast.success(msg);
-    qc.invalidateQueries();
+    try {
+      await api(`/buyers/${id}`, { method: "PATCH", json: body });
+      toast.success(msg);
+      qc.invalidateQueries();
+    } catch (e: any) { toast.error(e.message); }
   };
   const points = (hist ?? []).map((h) => ({ x: dayNum(h.invoice_date), y: h.days_late, z: h.amount, n: h.number }));
   const TrendIcon = c.trend === "worse" ? TrendingUp : c.trend === "better" ? TrendingDown : Minus;
@@ -289,14 +300,14 @@ function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) 
       </div>
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          ["They owe you", inrShort(c.open_amount)], ["Usually pays", c.avg_days_late == null ? "-" : `${Math.round(c.avg_days_late)}d late`],
+          ["They owe you", inrShort(c.open_amount)], ["Usually pays", lateness(c.avg_days_late)],
           ["Paid 15+ days late", pct(c.pct_late15)], ["Invoices (12 m)", String(c.invoices_12m)],
         ].map(([l, v]) => <Card key={l} className="p-3.5"><div className="text-xs ink-3">{l}</div><div className="mt-1 text-lg font-semibold num ink">{v}</div></Card>)}
       </div>
       {c.trend && (
         <div className={cx("mt-3 flex items-center gap-2 rounded-xl p-3 text-sm", c.trend === "worse" ? "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300" : c.trend === "better" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "surface-2 ink-2")}>
           <TrendIcon className="size-4" />
-          {c.trend === "worse" ? `Getting slower - last 3 payments averaged ${Math.round(c.recent_days_late!)} days late.` : c.trend === "better" ? `Improving - last 3 payments averaged ${Math.round(c.recent_days_late!)} days late.` : "Payment behaviour is steady."}
+          {c.trend === "worse" ? `Getting slower - last 3 payments averaged ${lateness(c.recent_days_late, true)}.` : c.trend === "better" ? `Improving - last 3 payments averaged ${lateness(c.recent_days_late, true)}.` : "Payment behaviour is steady."}
         </div>
       )}
       {c.overdue_amount > 0 && (
@@ -312,12 +323,12 @@ function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) 
           <ResponsiveContainer>
             <ScatterChart margin={{ left: -16, right: 8, top: 8 }}>
               <CartesianGrid stroke="var(--line)" />
-              <XAxis type="number" dataKey="x" domain={["dataMin", "dataMax"]} tickFormatter={(v) => new Date(v * 86400000).toLocaleDateString("en-IN", { month: "short", year: "2-digit" })} tick={{ fontSize: 11 }} />
+              <XAxis type="number" dataKey="x" domain={["dataMin", "dataMax"]} tickFormatter={(v) => new Date(v * 86400000).toLocaleDateString("en-IN", { month: "short", year: "numeric" })} tick={{ fontSize: 11 }} />
               <YAxis type="number" dataKey="y" tick={{ fontSize: 11 }} unit="d" />
               <ZAxis type="number" dataKey="z" range={[30, 220]} />
               <ReferenceLine y={0} stroke="#10b981" strokeDasharray="4 4" />
               <ReferenceLine y={15} stroke="#f43f5e" strokeDasharray="4 4" />
-              <Tooltip formatter={(v: number, n: string) => (n === "y" ? [`${v} days late`, "Paid"] : n === "z" ? [inr(v), "Amount"] : [v, n])} labelFormatter={() => ""} contentStyle={{ borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)" }} />
+              <Tooltip {...tooltipProps} formatter={(v: number, n: string) => (n === "y" ? [lateness(v, true), "Paid"] : n === "z" ? [inr(v), "Amount"] : [v, n])} labelFormatter={() => ""} />
               <Scatter data={points} fill="#6366f1" fillOpacity={0.7} />
             </ScatterChart>
           </ResponsiveContainer>
@@ -337,8 +348,15 @@ function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) 
       <Card className="mt-4 space-y-4 p-5">
         <h3 className="font-semibold ink">Contact & settings</h3>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input label="WhatsApp number" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => phone !== c.phone && patch({ phone }, "WhatsApp number saved")} />
-          <Input label="Accounts email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => email !== c.email && patch({ email }, "Email saved")} />
+          <Input label="WhatsApp number" value={phone} disabled={demo} onChange={(e) => setPhone(e.target.value)} onBlur={() => phone !== c.phone && patch({ phone }, "WhatsApp number saved")} />
+          <Input label="Accounts email" value={email} disabled={demo} onChange={(e) => setEmail(e.target.value)} onBlur={() => email !== c.email && patch({ email }, "Email saved")} />
+          {demo && <p className="text-xs ink-3 sm:col-span-2">Contact details can't be saved in the shared demo. WhatsApp still opens so you can pick any chat to preview the message.</p>}
+        </div>
+        <div>
+          <span className="mb-1.5 block text-sm font-medium ink">Message language</span>
+          <Segmented<Lang | ""> value={c.language ?? ""} onChange={(v) => patch({ language: v }, "Message language saved")}
+            options={[{ value: "", label: "Business default" }, ...LANGS.map((l) => ({ value: l.code, label: l.label }))]} />
+          <span className="mt-1 block text-xs ink-3">Reminders to this customer are drafted in this language.</span>
         </div>
         <Toggle checked={c.is_government} onChange={(v) => patch({ is_government: v })} label="Government department"
           hint="The 45-day law still applies; the 43B(h) tax lever doesn't." />

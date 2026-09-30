@@ -17,13 +17,29 @@ from .db import Buyer, Invoice, Org
 # of billing at any time, so grade A gets ~3 months before we worry.
 LIMIT_MULT = {"A": 3.0, "B": 2.0, "C": 1.5, "D": 0.75}
 
+# Message to the customer about the new order, in their language.
+ORDER_MSG = {
+    "en": "Dear {name} team,\n\nThank you for your order of {amt}. To dispatch promptly, we request {terms}.{clear}\n\n{sign},\n{seller}",
+    "hi": "नमस्ते {name} टीम,\n\n{amt} के आपके ऑर्डर के लिए धन्यवाद। शीघ्र डिस्पैच के लिए हम {terms} का अनुरोध करते हैं।{clear}\n\n{sign},\n{seller}",
+    "mr": "नमस्कार {name} टीम,\n\n{amt} च्या तुमच्या ऑर्डरबद्दल धन्यवाद. लवकर डिस्पॅचसाठी आम्ही {terms} ची विनंती करतो.{clear}\n\n{sign},\n{seller}",
+}
+TERMS = {
+    "part": {"en": "{adv}% advance with the purchase order and the balance within {d} days",
+             "hi": "ऑर्डर के साथ {adv}% अग्रिम और शेष राशि {d} दिनों में", "mr": "ऑर्डरसोबत {adv}% आगाऊ रक्कम आणि उर्वरित रक्कम {d} दिवसांत"},
+    "full": {"en": "full advance", "hi": "पूर्ण अग्रिम भुगतान", "mr": "संपूर्ण आगाऊ पेमेंट"},
+    "credit": {"en": "{d}-day credit", "hi": "{d} दिनों का क्रेडिट", "mr": "{d} दिवसांचे क्रेडिट"},
+}
+CLEAR = {"en": " We also request clearance of the outstanding {amt}.", "hi": " कृपया बकाया {amt} का भुगतान भी करें।",
+         "mr": " कृपया थकबाकी {amt} देखील भरावी."}
+
 
 def _customer_frame(s: Session, org: Org, buyer_id: int | None) -> pd.DataFrame:
     df = S.frame(s, org.id)
     return df[df["buyer_id"] == buyer_id] if buyer_id else df.iloc[0:0]
 
 
-def check_order(s: Session, org: Org, buyer_id: int | None, new_name: str | None, amount: float, days: int) -> dict:
+def check_order(s: Session, org: Org, buyer_id: int | None, new_name: str | None, amount: float, days: int,
+                lang: str | None = None) -> dict:
     t = S.today()
     b = s.get(Buyer, buyer_id) if buyer_id else None
     hist = _customer_frame(s, org, buyer_id)
@@ -98,16 +114,20 @@ def check_order(s: Session, org: Org, buyer_id: int | None, new_name: str | None
         headline = "Safe to approve on normal terms"
         conditions = ["Send a friendly reminder 3 days before the due date"]
 
+    # Money already overdue is the strongest reason of all - lead with it so the verdict explains itself.
+    if overdue_amt:
+        reasons = [f"{A.inr(overdue_amt)} from them is already overdue (oldest {oldest_overdue} days)"] + reasons[:2]
+
+    lang = lang or (b.language if b else "") or org.language
     msg = None
     if verdict != "APPROVE":
-        name = b.name if b else new_name
-        terms = (f"{advance}% advance with the purchase order and the balance within {min(days, 30)} days"
-                 if 0 < advance < 100 else "full advance" if advance == 100 else f"{days}-day credit")
-        msg = (f"Dear {name} team,\n\nThank you for your order of {A.inr(amount)}. To dispatch promptly, we request "
-               f"{terms}." + (f" We also request clearance of the outstanding {A.inr(overdue_amt)}." if verdict == "HOLD" and overdue_amt else "")
-               + f"\n\nRegards,\n{org.sender_name or org.name}")
+        kind_ = "part" if 0 < advance < 100 else "full" if advance == 100 else "credit"
+        terms = TERMS[kind_][lang].format(adv=advance, d=min(days, 30) if kind_ == "part" else days)
+        clear = CLEAR[lang].format(amt=A.inr(overdue_amt)) if verdict == "HOLD" and overdue_amt else ""
+        msg = ORDER_MSG[lang].format(name=b.name if b else new_name, amt=A.inr(amount), terms=terms, clear=clear,
+                                     sign=A.SIGN[lang], seller=org.sender_name or org.name)
     return dict(
-        verdict=verdict, headline=headline, conditions=conditions, advance_pct=advance, message=msg,
+        verdict=verdict, headline=headline, conditions=conditions, advance_pct=advance, message=msg, message_lang=lang,
         customer=b.name if b else new_name, grade=grade, model=kind,
         p_late=p, expected_days_late=q50, range=[lo, hi], expected_pay_date=(t + timedelta(days=round(exp_days))).isoformat(),
         expected_days_to_cash=exp_days, delay_cost=delay_cost, price_cushion=cushion,

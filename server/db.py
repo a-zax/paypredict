@@ -76,6 +76,7 @@ class Buyer(SQLModel, table=True):
     segment: str = "Unknown"              # optional: Large Corporate / MSME / ...
     is_government: bool = False           # Govt depts: MSMED applies, 43B(h) does not
     treds_onboarded: bool = False
+    language: str = ""                    # message language for this customer: en | hi | mr; "" = business default
 
 
 class Invoice(SQLModel, table=True):

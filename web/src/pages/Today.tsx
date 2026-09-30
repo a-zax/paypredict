@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, ArrowRight, CalendarClock, PartyPopper, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, Clock, PartyPopper, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
@@ -55,7 +55,7 @@ export function Today() {
     <div>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <p className="text-sm ink-3">{d(data.date, { weekday: "long", day: "numeric", month: "long" })}</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight ink sm:text-3xl">{greeting()}, {me?.user.name.split(" ")[0]} 👋</h1>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight ink sm:text-3xl">{greeting()}{me && !me.org.is_demo ? `, ${me.user.name.split(" ")[0]}` : ""} 👋</h1>
       </motion.div>
 
       {/* Headline insight */}
@@ -89,22 +89,25 @@ export function Today() {
 
       <div data-tour="kpis" className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Stat label={t("owed")} value={inrShort(s.outstanding)} hint={`${s.open_count} unpaid invoices`} icon={<Wallet className="size-4" />} />
-        <Stat label={t("overdue")} value={inrShort(s.overdue)} hint={`${s.overdue_count} invoices past due`} tone="red" />
-        <Stat label={t("likely_late")} value={inrShort(s.at_risk)} hint={`${s.high_risk_count} high-risk invoices`} tone="amber" />
-        <Stat label={<Term k="MSMED">Past 45 days</Term>} value={inrShort(s.past_45_amount)} hint={<>Avg. collection time {s.dso ? Math.round(s.dso) : "-"} days (<Term k="DSO" />)</>} icon={<AlertTriangle className="size-4" />} />
+        <Stat label={t("overdue")} value={inrShort(s.overdue)} hint={`${s.overdue_count} invoices past due`} tone="red" icon={<Clock className="size-4" />} />
+        <Stat label={t("likely_late")} value={inrShort(s.at_risk)} hint={`${s.high_risk_count} high-risk invoices`} tone="amber" icon={<TrendingDown className="size-4" />} />
+        {/* Counted from the invoice date (MSMED s.15), not the due date - so it can exceed "Overdue". The label says so. */}
+        <Stat label={<Term k="MSMED">Past 45-day legal limit</Term>} value={inrShort(s.past_45_amount)} tone="red"
+          hint={`${s.past_45_count} invoices · 45+ days since invoice`} icon={<AlertTriangle className="size-4" />} />
       </div>
 
       <SetupChecklist />
 
-      {data.impact.actions_taken > 0 && (
+      {/* Only once there's something to show - a row of ₹0s reads as "this did nothing". */}
+      {(data.impact.collected_after_action > 0 || data.impact.days_saved >= 1 || data.impact.interest_saved >= 1) && (
         <Link to="/impact" className="focus-ring mt-4 block">
           <Card className="flex flex-wrap items-center gap-x-8 gap-y-3 p-4 transition hover:border-emerald-300 sm:px-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300"><TrendingUp className="size-4" />Your PayPredict impact</div>
-            {[
-              [inrShort(data.impact.collected_after_action), `collected after ${data.impact.actions_taken} actions`],
-              [`${Math.round(data.impact.days_saved)} days`, "sooner than the AI's forecast"],
-              [inrShort(data.impact.interest_saved), "interest saved"],
-            ].map(([v, l]) => <div key={l}><span className="font-semibold num ink">{v}</span> <span className="text-sm ink-2">{l}</span></div>)}
+            {([
+              [data.impact.collected_after_action > 0, inrShort(data.impact.collected_after_action), `collected after ${data.impact.actions_taken} actions`],
+              [data.impact.days_saved >= 1, `${Math.round(data.impact.days_saved)} days`, "sooner than the AI's forecast"],
+              [data.impact.interest_saved >= 1, inrShort(data.impact.interest_saved), "interest saved"],
+            ] as const).filter(([show]) => show).map(([, v, l]) => <div key={l}><span className="font-semibold num ink">{v}</span> <span className="text-sm ink-2">{l}</span></div>)}
             <ArrowRight className="ml-auto size-4 ink-3" />
           </Card>
         </Link>
@@ -114,7 +117,7 @@ export function Today() {
       <div data-tour="actions" className="mt-10 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold ink">{t("your_actions")}</h2>
-          <p className="text-sm ink-2">Ranked by how much money is at stake. One tap each.</p>
+          <p className="text-sm ink-2">Most urgent first - weighing the amount, how late it is and how likely it is to slip. One tap each.</p>
         </div>
         {total > 0 && <div className="flex items-center gap-3"><div className="hidden text-right text-xs ink-3 sm:block">{doneCount} {t("done_today")}</div><ProgressRing done={doneCount} total={total} /></div>}
       </div>

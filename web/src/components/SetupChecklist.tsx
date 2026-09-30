@@ -28,8 +28,9 @@ export function SetupChecklist() {
   const items = [
     { done: tourDone, title: "Take the 2-minute tour", sub: "See every feature on your own data", cta: <button onClick={() => start(0)} className="inline-flex items-center gap-1 text-brand-600"><Compass className="size-3.5" />Start</button> },
     { done: data.upi, title: "Add your UPI ID", sub: "Every reminder gets a one-tap payment link", cta: <Link to="/settings" className="text-brand-600">Add</Link> },
-    { done: data.phones_needed > 0 && data.phones >= Math.min(5, data.phones_needed), title: "Add WhatsApp numbers for your top customers",
-      sub: `${data.phones} of your ${data.phones_needed} biggest customers have a number`, cta: <Link to="/customers" className="text-brand-600">Add</Link> },
+    // Contact details can't be saved in the shared demo, so don't ask for them there.
+    ...(me?.org.is_demo ? [] : [{ done: data.phones_needed > 0 && data.phones >= Math.min(5, data.phones_needed), title: "Add WhatsApp numbers for your top customers",
+      sub: `${data.phones} of your ${data.phones_needed} biggest customers have a number`, cta: <Link to="/customers" className="text-brand-600">Add</Link> }]),
     { done: data.first_action, title: "Send your first reminder", sub: "Use a card below - it takes one tap", cta: null },
     { done: creditDone, title: "Check a new order before dispatch", sub: "Know the risk before you give credit", cta: <Link to="/credit-check" className="text-brand-600">Try</Link> },
     { done: data.legal_details, title: "Add Udyam number & address", sub: "Needed for legal notices with interest", cta: <Link to="/settings" className="text-brand-600">Add</Link> },
@@ -55,17 +56,26 @@ export function SetupChecklist() {
       </div>
       <AnimatePresence initial={false}>
         {!collapsed && (
-          <motion.ul initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="divide-y line overflow-hidden border-t line">
-            {items.map((it) => (
+          <motion.ul initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="divide-y divide-[var(--line)] overflow-hidden border-t line">
+            {/* Only what's left gets a full row; finished steps fold into one line so the Today actions stay high on the page. */}
+            {items.filter((it) => !it.done).map((it) => (
               <li key={it.title} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                <span className={cx("grid size-6 shrink-0 place-items-center rounded-full border-2", it.done ? "border-emerald-500 bg-emerald-500 text-white" : "line")}>{it.done && <Check className="size-3.5" />}</span>
+                <span className="size-6 shrink-0 rounded-full border-2 line" />
                 <div className="min-w-0 flex-1">
-                  <div className={cx("text-sm font-medium", it.done ? "ink-3 line-through" : "ink")}>{it.title}</div>
+                  <div className="text-sm font-medium ink">{it.title}</div>
                   <div className="text-xs ink-3">{it.sub}</div>
                 </div>
-                {!it.done && it.cta && <span className="text-sm font-medium">{it.cta}</span>}
+                {it.cta && <span className="text-sm font-medium">{it.cta}</span>}
               </li>
             ))}
+            {n > 0 && (
+              <li className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-500 text-white"><Check className="size-3.5" /></span>
+                <div className="min-w-0 flex-1 truncate text-xs ink-3">
+                  <span className="font-medium ink-2">Done:</span> {items.filter((it) => it.done).map((it) => it.title).join(" · ")}
+                </div>
+              </li>
+            )}
           </motion.ul>
         )}
       </AnimatePresence>

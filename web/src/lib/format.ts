@@ -13,6 +13,14 @@ export function d(iso: string | null | undefined, opts: Intl.DateTimeFormatOptio
   if (!iso) return "-";
   return new Date(iso.length === 10 ? iso + "T00:00:00" : iso).toLocaleDateString("en-IN", opts);
 }
+/** Average days after the due date: 12 -> "12d late", -3 -> "3d early", 0 -> "On time". */
+export function lateness(days: number | null | undefined, long = false): string {
+  if (days == null) return "-";
+  const n = Math.round(days);
+  if (n === 0) return long ? "on time" : "On time";
+  const unit = long ? (Math.abs(n) === 1 ? " day" : " days") : "d";
+  return `${Math.abs(n)}${unit} ${n > 0 ? "late" : "early"}`;
+}
 export function pct(x: number | null | undefined, digits = 0) {
   return x == null ? "-" : `${(x * 100).toFixed(digits)}%`;
 }

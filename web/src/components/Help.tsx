@@ -28,7 +28,7 @@ export function Kbd({ children }: { children: React.ReactNode }) {
 export function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} title="Keyboard shortcuts">
-      <div className="divide-y line">
+      <div className="divide-y divide-[var(--line)]">
         {SHORTCUTS.map(([keys, label]) => (
           <div key={label} className="flex items-center justify-between py-2.5 text-sm">
             <span className="ink-2">{label}</span>

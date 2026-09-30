@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { HelpCircle, X } from "lucide-react";
+import { ChevronDown, HelpCircle, X } from "lucide-react";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cx } from "../lib/format";
 
@@ -167,14 +167,25 @@ export function Input({ label, hint, className, ...rest }: React.InputHTMLAttrib
   return (
     <label className="block">
       {label && <span className="mb-1.5 block text-sm font-medium ink">{label}</span>}
-      <input {...rest} className={cx("focus-ring h-11 w-full rounded-xl border line bg-[var(--surface)] px-3.5 text-sm ink placeholder:text-[var(--ink-3)] transition-shadow", className)} />
+      <input {...rest} className={cx("focus-ring h-11 w-full rounded-xl border line bg-[var(--surface)] px-3.5 text-sm ink placeholder:text-[var(--ink-3)] transition-shadow disabled:cursor-not-allowed disabled:opacity-60", className)} />
       {hint && <span className="mt-1 block text-xs ink-3">{hint}</span>}
     </label>
   );
 }
+/** Native <select> (keyboard + mobile pickers for free) with our own chevron instead of the browser's cramped arrow. */
+export function Select({ className, children, ...rest }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className={cx("relative", className)}>
+      <select {...rest} className="focus-ring h-10 w-full cursor-pointer appearance-none rounded-xl border line bg-[var(--surface)] pl-3.5 pr-10 text-sm ink transition-shadow">
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 ink-3" />
+    </div>
+  );
+}
 export function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; hint?: ReactNode }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className="focus-ring flex w-full items-start justify-between gap-4 rounded-xl text-left">
+    <button type="button" onClick={() => onChange(!checked)} className="focus-ring flex w-full items-start justify-between gap-4 rounded-xl text-left disabled:cursor-not-allowed disabled:opacity-60">
       <span><span className="block text-sm font-medium ink">{label}</span>{hint && <span className="mt-0.5 block text-xs ink-2">{hint}</span>}</span>
       <span className={cx("relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors", checked ? "bg-brand-600" : "bg-slate-300 dark:bg-slate-600")}>
         <span className={cx("absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform", checked ? "translate-x-[22px]" : "translate-x-0.5")} />
@@ -187,7 +198,7 @@ export function Segmented<T extends string>({ value, onChange, options, size = "
     <div className="inline-flex rounded-xl surface-2 p-1 border line">
       {options.map((o) => (
         <button key={o.value} onClick={() => onChange(o.value)}
-          className={cx("focus-ring relative whitespace-nowrap rounded-lg font-medium transition-colors", size === "sm" ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
+          className={cx("focus-ring relative whitespace-nowrap rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60", size === "sm" ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm",
             value === o.value ? "ink" : "ink-2 hover:text-[var(--ink)]")}>
           {value === o.value && <motion.span layoutId={`seg-${options.map((x) => x.value).join()}`} className="absolute inset-0 rounded-lg bg-[var(--surface)] shadow-sm border line" transition={{ type: "spring", damping: 30, stiffness: 400 }} />}
           <span className="relative">{o.label}</span>

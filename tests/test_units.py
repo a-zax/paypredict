@@ -103,6 +103,32 @@ def test_messages_exist_in_all_languages():
             assert "INV-9" in text and "₹2,00,000" in text
 
 
+def test_reminder_states_days_late_and_pay_by():
+    msg = A.draft("REMINDER", dict(_inv(), number="INV-9", buyer_name="Kaveri Foods"), ORG, "en", TODAY)
+    assert "(10 days ago)" in msg and "by 06 Oct 2026" in msg
+    early = A.draft("REMINDER", dict(_inv(due_date=TODAY + timedelta(days=5)), number="INV-9", buyer_name="K"), ORG, "en", TODAY)
+    assert "ago" not in early and "schedule the payment" in early
+
+
+def test_legal_letters_carry_udyam_number():
+    org = dict(ORG, udyam_number="UDYAM-MH-26-0012345")
+    for action in ("LEGAL_NUDGE", "SAMADHAAN"):
+        for lang in ("en", "hi", "mr"):
+            msg = A.draft(action, dict(_inv(), number="INV-9", buyer_name="K"), org, lang, TODAY)
+            assert msg.rstrip().endswith("UDYAM-MH-26-0012345")
+    assert "UDYAM" not in A.draft("REMINDER", dict(_inv(), number="INV-9", buyer_name="K"), org, "en", TODAY)
+    assert "Udyam Registration" not in A.draft("LEGAL_NUDGE", dict(_inv(), number="INV-9", buyer_name="K"), ORG, "en", TODAY)
+
+
+def test_dates_and_subject_use_the_message_language():
+    inv = dict(_inv(), number="INV-9", buyer_name="K")
+    assert "सितंबर 2026" in A.draft("REMINDER", inv, ORG, "hi", TODAY)
+    assert "सप्टेंबर 2026" in A.draft("REMINDER", inv, ORG, "mr", TODAY)
+    assert "Sep 2026" in A.draft("REMINDER", inv, ORG, "en", TODAY)
+    assert A.fmt_date(date(2026, 8, 5), "hi") == "05 अगस्त 2026"
+    assert A.subject("INV-9", 200_000, "mr") == "इनव्हॉइस INV-9 - ₹2,00,000"
+
+
 def test_indian_rupee_format():
     assert A.inr(12345678) == "₹1,23,45,678" and A.inr(999) == "₹999"
 

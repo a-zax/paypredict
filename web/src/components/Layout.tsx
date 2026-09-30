@@ -15,6 +15,9 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { GlossaryModal, HelpMenu, Kbd, ShortcutsModal } from "./Help";
 import { Avatar } from "./ui";
 
+// The sidebar switch translates menu labels only; customer messages follow Settings / each customer's language.
+const MENU_LANG_HINT = "Menu language. Customer messages use the language set in Settings or on each customer.";
+
 const NAV: { to: string; key: Key; icon: ReactNode; tour?: string }[] = [
   { to: "/", key: "today", icon: <Zap className="size-[18px]" /> },
   { to: "/invoices", key: "invoices", icon: <FileText className="size-[18px]" /> },
@@ -102,8 +105,9 @@ function Layout({ tourKey }: { tourKey: string }) {
           <HelpMenu onShortcuts={() => setShortcuts(true)} onGlossary={() => setGlossary(true)} />
           <NavLink to="/settings" className={navCls}><Settings className="size-[18px]" />{t("settings")}</NavLink>
           <div className="flex items-center gap-1 px-2 pt-2" data-tour="prefs">
+            <span className="pr-1 text-[11px] ink-3" title={MENU_LANG_HINT}>Menu</span>
             {LANGS.map((l) => (
-              <button key={l.code} onClick={() => setLang(l.code)} aria-pressed={lang === l.code}
+              <button key={l.code} onClick={() => setLang(l.code)} aria-pressed={lang === l.code} title={MENU_LANG_HINT}
                 className={cx("focus-ring rounded-lg px-2 py-1 text-xs font-medium", lang === l.code ? "bg-[var(--surface-2)] ink" : "ink-3 hover:ink-2")}>{l.label}</button>
             ))}
             <button onClick={toggle} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} className="focus-ring ml-auto grid size-8 place-items-center rounded-lg ink-2 hover:bg-[var(--surface-2)]">
@@ -171,7 +175,8 @@ function Layout({ tourKey }: { tourKey: string }) {
                 ))}
               </div>
               <div className="mt-4 flex items-center gap-1 px-1">
-                {LANGS.map((l) => <button key={l.code} onClick={() => setLang(l.code)} className={cx("rounded-lg px-3 py-1.5 text-sm", lang === l.code ? "bg-[var(--surface-2)] font-medium ink" : "ink-3")}>{l.label}</button>)}
+                <span className="pr-1 text-xs ink-3">Menu</span>
+                {LANGS.map((l) => <button key={l.code} onClick={() => setLang(l.code)} title={MENU_LANG_HINT} className={cx("rounded-lg px-3 py-1.5 text-sm", lang === l.code ? "bg-[var(--surface-2)] font-medium ink" : "ink-3")}>{l.label}</button>)}
                 <button onClick={logout} className="ml-auto flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-rose-600"><LogOut className="size-4" />Log out</button>
               </div>
             </motion.div>

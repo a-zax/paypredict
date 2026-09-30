@@ -3,6 +3,7 @@ import io
 import json
 from contextlib import nullcontext
 from datetime import date, datetime, timedelta
+from urllib.parse import urlencode
 
 import joblib
 
@@ -172,13 +173,20 @@ def rescore(s: Session, org: Org):
             why = (f"The customer says they've paid via UPI"
                    + (f" (reference {inv.claim_ref})" if inv.claim_ref else "") + ". Check your bank statement and confirm.")
             value, priority = 0.0, inv.amount * 10
-        lead = [f"Already {overdue} days past the due date"] if overdue > 0 else []
-        lead += ["Missed a promised payment date"] if broken else []
+        # The overdue badge already says "N days overdue", so that line is only a fallback when the model has nothing to add.
+        lead = ["Missed a promised payment date"] if broken else []
+        model_reasons = A.reasons_for(row.to_dict(), deltas.loc[idx].to_dict(), top=3 - len(lead))
+        if not model_reasons:   # nothing strong from the model: their track record says more than repeating the badge
+            r = row.to_dict()
+            model_reasons = [t for t in (
+                A.REASON_TEXT["hist_avg_days_late"](r["hist_avg_days_late"]) if (r.get("hist_avg_days_late") or 0) >= 3 else None,
+                A.REASON_TEXT["hist_pct_late15"](r["hist_pct_late15"]) if (r.get("hist_pct_late15") or 0) >= 0.2 else None,
+            ) if t] or ([f"Already {overdue} days past the due date"] if overdue > 0 else [])
         updates.append(dict(
             id=inv.id, p_late=rec_in["p_late"], exp_days_late=float(dist["q50"][n]),
             lo_days_late=float(dist["lo"][n]), hi_days_late=float(dist["hi"][n]),
             action=action, rationale=why, benefit=float(value), priority=float(priority),
-            reasons=json.dumps(lead + A.reasons_for(row.to_dict(), deltas.loc[idx].to_dict(), top=4 - len(lead))),
+            reasons=json.dumps(lead + model_reasons),
             pmf=json.dumps([round(float(x), 4) for x in dist["pmf"][n]]), scored_on=t))
     # One batched UPDATE instead of a round trip per invoice (hundreds of trips to a hosted database add up).
     s.execute(update(Invoice), updates)
@@ -299,7 +307,7 @@ def invoice_view(inv: Invoice, b: Buyer, t: date, org: Org | None = None, lang: 
         if org.upi_id and base:
             v["pay_url"] = f"{base}/pay/{P.pay_token(inv.id, org.id, SECRET)}"
     if org is not None and inv.action and not inv.paid_date:
-        lang = lang or org.language
+        lang = lang or b.language or org.language
         rec = dict(amount=inv.amount, invoice_date=inv.invoice_date, due_date=inv.due_date, number=inv.number,
                    buyer_name=b.name, is_government=b.is_government)
         text = A.draft(inv.action, rec, org_dict(org), lang, t)
@@ -307,7 +315,8 @@ def invoice_view(inv: Invoice, b: Buyer, t: date, org: Org | None = None, lang: 
         if inv.action in ("LEGAL_NUDGE", "SAMADHAAN") and v.get("interest") and v["interest"]["applies"]:
             extra.append(P.INTEREST_LINE[lang].format(amt=A.inr(v["interest"]["interest"])))
         if v.get("pay_url") and inv.action in ("REMINDER", "EARLY_PAY_OFFER", "LEGAL_NUDGE", "SAMADHAAN"):
-            url = v["pay_url"] + ("?offer=1" if inv.action == "EARLY_PAY_OFFER" else "")
+            q = [("offer", "1")] * (inv.action == "EARLY_PAY_OFFER") + [("lang", lang)] * (lang != "en")
+            url = v["pay_url"] + ("?" + urlencode(q) if q else "")   # the pay page opens in the message's language
             extra.append(P.PAY_LINE[lang].format(url=url))
         if extra:   # insert before the sign-off (last two lines: "Regards," + name)
             head, sep, tail = text.rpartition("\n\n")
@@ -316,13 +325,14 @@ def invoice_view(inv: Invoice, b: Buyer, t: date, org: Org | None = None, lang: 
         v["message_lang"] = lang
         v["internal_action"] = inv.action in A.INTERNAL
         v["whatsapp_url"] = A.whatsapp_link(b.phone, text)
-        v["email_url"] = A.email_link(b.email, f"Invoice {inv.number} - {A.inr(inv.amount)}", text)
+        v["email_url"] = A.email_link(b.email, A.subject(inv.number, inv.amount, lang), text)
     return v
 
 
-def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000) -> dict:
+def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000, gap_weeks: int = 4) -> dict:
     """Weekly collections: 'assumed' (everyone pays on due date) vs PayPredict expected, with an
-    80% band from Monte-Carlo simulation over each invoice's payment-date distribution."""
+    80% band from Monte-Carlo simulation over each invoice's payment-date distribution.
+    Also splits the next `gap_weeks` shortfall (due - expected) by customer: who is holding the cash."""
     t = today()
     invs = s.exec(select(Invoice).where(Invoice.org_id == org_id, Invoice.paid_date.is_(None))).all()
     start = t - timedelta(days=t.weekday())
@@ -330,10 +340,12 @@ def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000) -> dict
     assumed = np.zeros(weeks)
     sim = np.zeros((sims, weeks))
     rng = np.random.default_rng(7)
+    gap: dict[int, list] = {}          # buyer_id -> [shortfall, invoices]
     for inv in invs:
         wk = max((max(inv.due_date, t) - start).days // 7, 0)
         if wk < weeks:
             assumed[wk] += inv.amount
+        due_in_window = inv.amount if wk < gap_weeks else 0.0
         pmf = np.array(json.loads(inv.pmf or "[]"))
         if pmf.size != ml.NB or pmf.sum() <= 0:
             continue
@@ -346,6 +358,11 @@ def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000) -> dict
         w = (pay // 7).astype(int)
         ok = w < weeks
         np.add.at(sim, (np.arange(sims)[ok], w[ok]), inv.amount)
+        short = due_in_window - inv.amount * float((w < gap_weeks).mean())
+        if short > 0:
+            g = gap.setdefault(inv.buyer_id, [0.0, 0])
+            g[0] += short
+            g[1] += 1
     cum_sim = np.cumsum(sim, axis=1)
     rows = []
     for w in range(weeks):
@@ -353,7 +370,11 @@ def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000) -> dict
                          cum_assumed=float(assumed[:w + 1].sum()), cum_expected=float(cum_sim[:, w].mean()),
                          cum_low=float(np.percentile(cum_sim[:, w], 10)),
                          cum_high=float(np.percentile(cum_sim[:, w], 90))))
-    return {"weeks": rows, "outstanding": float(sum(i.amount for i in invs))}
+    top = sorted(gap.items(), key=lambda kv: -kv[1][0])[:5]
+    names = {b.id: b.name for b in s.exec(select(Buyer).where(Buyer.id.in_([k for k, _ in top])))} if top else {}
+    return {"weeks": rows, "outstanding": float(sum(i.amount for i in invs)), "gap_weeks": gap_weeks,
+            "gap_total": float(sum(v[0] for v in gap.values())),
+            "gap_by_customer": [dict(buyer_id=k, name=names.get(k, "?"), gap=float(v[0]), invoices=v[1]) for k, v in top]}
 
 
 def summary(s: Session, org: Org) -> dict:
@@ -431,7 +452,7 @@ def buyer_scorecard(s: Session, org_id: int) -> list[dict]:
                   "D": "High risk - take advance, or sell their invoices on TReDS.",
                   None: "Not enough payment history yet."}[grade]
         trend = None if recent is None or avg is None else ("worse" if recent > avg + 7 else "better" if recent < avg - 7 else "steady")
-        out.append(dict(id=b.id, name=b.name, phone=b.phone, email=b.email, segment=b.segment,
+        out.append(dict(id=b.id, name=b.name, phone=b.phone, email=b.email, segment=b.segment, language=b.language,
                          is_government=b.is_government, treds_onboarded=b.treds_onboarded,
                          invoices_12m=len(paid), avg_days_late=avg, pct_late15=pct, recent_days_late=recent,
                          trend=trend, score=score, grade=grade, advice=advice,

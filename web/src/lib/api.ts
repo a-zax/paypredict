@@ -37,7 +37,7 @@ export async function api<T = any>(path: string, opts: RequestInit & { json?: un
 export type Org = {
   id: number; name: string; sender_name: string; udyam_registered: boolean; cost_of_capital: number;
   treds_rate: number; early_pay_discount: number; relationship_first: boolean; language: Lang; onboarded: boolean;
-  upi_id: string; udyam_number: string; gstin: string; address: string; contact_phone: string; bank_rate: number;
+  upi_id: string; udyam_number: string; gstin: string; address: string; contact_phone: string; bank_rate: number; is_demo?: boolean;
 };
 export type Interest = { applies: boolean; from: string; days: number; rate: number; interest: number; total: number };
 export type Impact = {
@@ -71,7 +71,7 @@ export type Summary = {
   cash_gap_4w: number; expected_4w: number; assumed_4w: number; gap_date: string | null; dso: number | null;
 };
 export type Customer = {
-  id: number; name: string; phone: string; email: string; segment: string; is_government: boolean;
+  id: number; name: string; phone: string; email: string; segment: string; language: Lang | ""; is_government: boolean;
   treds_onboarded: boolean; invoices_12m: number; avg_days_late: number | null; pct_late15: number | null;
   recent_days_late: number | null; trend: "worse" | "better" | "steady" | null; score: number | null;
   grade: "A" | "B" | "C" | "D" | null; advice: string; open_amount: number; open_count: number;
@@ -80,4 +80,8 @@ export type Customer = {
 export type ForecastWeek = {
   week: string; assumed: number; expected: number; cum_assumed: number; cum_expected: number;
   cum_low: number; cum_high: number;
+};
+export type Forecast = {
+  weeks: ForecastWeek[]; outstanding: number; gap_weeks: number; gap_total: number;
+  gap_by_customer: { buyer_id: number; name: string; gap: number; invoices: number }[];
 };

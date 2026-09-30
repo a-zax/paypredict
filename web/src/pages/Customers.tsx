@@ -1,15 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { Search, TrendingDown, TrendingUp, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDrawers } from "../components/Drawers";
-import { Card, Empty, Grade, Skeleton } from "../components/ui";
+import { Button, Card, Empty, Grade, Select, Skeleton } from "../components/ui";
 import { api, type Customer } from "../lib/api";
-import { cx, inrShort } from "../lib/format";
+import { cx, inrShort, lateness } from "../lib/format";
 import { usePageTitle } from "../lib/theme";
 
 const GRADE_INFO = {
   A: ["Reliable", "bg-emerald-500"], B: ["Slightly late", "bg-sky-500"], C: ["Often late", "bg-amber-500"], D: ["High risk", "bg-rose-500"],
 } as const;
+// Short, scannable next step per grade; the full sentence stays in the tooltip and the customer panel.
+const NEXT_STEP: Record<string, string> = {
+  A: "Normal credit is safe", B: "Standard terms, remind early", C: "Shorter terms or part-advance", D: "Take advance, or use TReDS",
+};
+const PAGE = 50;
 
 export function Customers() {
   usePageTitle("Customers");
@@ -18,6 +23,8 @@ export function Customers() {
   const { data, isLoading } = useQuery<Customer[]>({ queryKey: ["buyers"], queryFn: () => api("/buyers") });
   const [grade, setGrade] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [limit, setLimit] = useState(PAGE);
+  useEffect(() => setLimit(PAGE), [grade, q, sort]);
   const counts = useMemo(() => {
     const c: Record<string, { n: number; amt: number }> = { A: { n: 0, amt: 0 }, B: { n: 0, amt: 0 }, C: { n: 0, amt: 0 }, D: { n: 0, amt: 0 } };
     data?.forEach((b) => { if (b.grade) { c[b.grade].n++; c[b.grade].amt += b.open_amount; } });
@@ -50,10 +57,10 @@ export function Customers() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search customers" aria-label="Search customers"
             className="focus-ring h-10 w-full rounded-xl border line bg-[var(--surface)] pl-10 pr-3 text-sm ink placeholder:text-[var(--ink-3)]" />
         </div>
-        <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort customers" className="focus-ring h-10 rounded-xl border line bg-[var(--surface)] px-3 text-sm ink">
+        <Select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort customers" className="sm:w-60">
           <option value="risk">Sort: most money at risk</option><option value="owed">Sort: owes the most</option>
           <option value="slow">Sort: slowest payers</option><option value="grade">Sort: best grade first</option>
-        </select>
+        </Select>
       </div>
       {grade && <div className="mt-2 text-sm ink-2">Showing grade {grade} only · <button onClick={() => setGrade(null)} className="font-medium text-brand-600">show all</button></div>}
 
@@ -61,29 +68,35 @@ export function Customers() {
         {isLoading ? <div className="space-y-2 p-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
           : !rows.length ? <Empty icon={<Users className="size-6" />} title="No customers match" />
           : (
-            <div className="divide-y line">
-              <div className="hidden grid-cols-[2.2fr_1fr_1fr_1fr_2fr] gap-4 px-5 py-3 text-xs font-medium uppercase tracking-wide ink-3 md:grid">
-                <span>Customer</span><span className="text-right">Owes you</span><span className="text-right">At risk</span><span className="text-right">Usually pays</span><span>What to do</span>
+            <div className="divide-y divide-[var(--line)]">
+              <div className="hidden grid-cols-[2.4fr_1fr_1fr_1fr_1.8fr] gap-4 px-5 py-3 text-xs font-medium uppercase tracking-wide ink-3 md:grid">
+                <span>Customer</span><span className="text-right">Owes you</span><span className="text-right">Overdue</span><span className="text-right">Usually pays</span><span>What to do</span>
               </div>
-              {rows.slice(0, 150).map((b) => (
+              {rows.slice(0, limit).map((b) => (
                 <button key={b.id} onClick={() => openCustomer(b.id)}
-                  className="focus-ring grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 text-left hover:bg-[var(--surface-2)] md:grid-cols-[2.2fr_1fr_1fr_1fr_2fr] md:px-5">
+                  className="focus-ring grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 text-left hover:bg-[var(--surface-2)] md:grid-cols-[2.4fr_1fr_1fr_1fr_1.8fr] md:px-5">
                   <div className="flex min-w-0 items-center gap-3">
                     <Grade g={b.grade} />
-                    <div className="min-w-0"><div className="truncate text-sm font-medium ink">{b.name}</div><div className="text-xs ink-3">{b.open_count} unpaid · {b.invoices_12m} paid this year</div></div>
+                    <div className="min-w-0"><div className="truncate text-sm font-medium ink" title={b.name}>{b.name}</div><div className="text-xs ink-3">{b.open_count} unpaid · {b.invoices_12m} paid this year</div></div>
                   </div>
                   <div className="text-right text-sm font-semibold num ink">{inrShort(b.open_amount)}</div>
-                  <div className="hidden text-right text-sm num text-amber-600 md:block">{inrShort(b.at_risk)}</div>
+                  <div className={cx("hidden text-right text-sm num md:block", b.overdue_amount > 0 ? "text-rose-600 dark:text-rose-400" : "ink-3")}>{b.overdue_amount > 0 ? inrShort(b.overdue_amount) : "-"}</div>
                   <div className="hidden items-center justify-end gap-1 text-right text-sm num ink-2 md:flex">
-                    {b.avg_days_late == null ? "-" : `${Math.round(b.avg_days_late)}d late`}
+                    {lateness(b.avg_days_late)}
                     {b.trend === "worse" && <TrendingUp className="size-3.5 text-rose-500" />}{b.trend === "better" && <TrendingDown className="size-3.5 text-emerald-500" />}
                   </div>
-                  <div className="col-span-2 truncate text-xs ink-2 md:col-span-1 md:text-sm">{b.advice}</div>
+                  <div className="col-span-2 truncate text-xs ink-2 md:col-span-1 md:text-sm" title={b.advice}>{b.grade ? NEXT_STEP[b.grade] : b.advice}</div>
                 </button>
               ))}
             </div>
           )}
       </Card>
+      {rows.length > limit && (
+        <div className="mt-4 flex flex-col items-center gap-1">
+          <Button onClick={() => setLimit((l) => l + PAGE * 2)}>Show more</Button>
+          <span className="text-xs ink-3">Showing {limit} of {rows.length}</span>
+        </div>
+      )}
     </div>
   );
 }

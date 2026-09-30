@@ -70,3 +70,16 @@ body {
 
 .recharts-cartesian-axis-tick-value { fill: var(--ink-3); font-size: 12px; }
 .recharts-tooltip-cursor { fill: var(--surface-2); }
+
+/* Range sliders: filled part in brand colour, the rest in the theme's line colour (the browser default is bright white in dark mode). */
+.range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; cursor: pointer;
+  background: linear-gradient(to right, #4f46e5 var(--p, 50%), var(--line) var(--p, 50%)); }
+.range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 9999px;
+  background: #fff; border: 2px solid #4f46e5; box-shadow: 0 1px 3px rgb(0 0 0 / 0.3); }
+.range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 9999px; background: #fff; border: 2px solid #4f46e5; }
+.range:focus-visible { outline: 2px solid #818cf8; outline-offset: 4px; }
+.range:disabled { cursor: default; opacity: 0.6; }
+
+/* Swipeable rows (filter tabs on phones) without a visible scrollbar. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

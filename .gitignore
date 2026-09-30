@@ -9,3 +9,4 @@ tests/demo_account.json
 .env
 .claude/
 .pytest_cache/
+web/*.tsbuildinfo
