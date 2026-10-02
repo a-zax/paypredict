@@ -141,7 +141,7 @@
     <div class="card ai stat"><div class="v">±9 days</div><div class="l">payment-date error, vs ±21 days if you trust due dates*</div></div>
     <div class="card ai stat"><div class="v">0.90</div><div class="l">risk-ranking quality (AUC), vs 0.84 for each customer's own average*</div></div>
     <div class="card ai stat"><div class="v">42%</div><div class="l">of all late money flagged in the AI's riskiest 20% of invoices*</div></div>
-    <div class="card ai stat"><div class="v">&lt;1 s</div><div class="l">for the agent to plan, call tools and answer, with no external AI service needed</div></div>
+    <div class="card ai stat"><div class="v">~2 s</div><div class="l">for the agent to plan, call tools and answer, with no external AI service needed</div></div>
   </div>
   <p class="tiny" style="margin-top:3pt">*Honest back-test: trained on 7,925 older invoices, tested on 2,735 newer ones the model never saw (sample business; data disclosed in Section 6).</p>
 
@@ -418,7 +418,7 @@ early-pay offer if waiting cost &gt; amount × 1%     MSMED interest = amount ×
       <li><strong>Trust in AI:</strong> visible reasoning, factor attributions, back-test inside the app.</li>
       <li><strong>Legal sensitivity:</strong> templates with CA review note; relationship-first mode.</li>
       <li><strong>Privacy (DPDP Act 2023):</strong> data isolated per business, deletable; demo data fictional.</li></ul></div>
-    <div class="card"><h4>Scalability</h4><p class="small">Stateless API in one container; PostgreSQL with per-business isolation and models stored in the database; scoring 600+ invoices in about a second with one batched update; the agent answers in under a second. Scaling means more containers and a larger database, not re-architecture.</p></div>
+    <div class="card"><h4>Scalability</h4><p class="small">Stateless API in one container; PostgreSQL with per-business isolation and models stored in the database; scoring 600+ invoices in about a second with one batched update; the agent answers in about two seconds. Scaling means more containers and a larger database, not re-architecture.</p></div>
     <div class="card"><h4>Business model (proposed)</h4><p class="small">Freemium SaaS: free up to 50 customers, then about ₹499 to ₹1,999 a month by size; referral revenue from TReDS platforms and NBFCs for invoices financed; distribution through CAs and Tally partners.</p></div>
   </div>
 </section>
@@ -442,7 +442,7 @@ early-pay offer if waiting cost &gt; amount × 1%     MSMED interest = amount ×
   <div class="gap"></div>
   <div class="opener"><div class="n">11</div><div><div class="kicker">Conclusion</div><h2>Know who will pay late. Get paid before it hurts.</h2></div></div>
   <p style="font-size:10pt">PayPredict turns a plain invoice ledger into an AI credit manager. A survival model predicts when each invoice will be paid; an explainability layer says why; a decision engine that understands the Indian levers (MSMED 45-day rule and interest, Section 43B(h), TReDS, MSME Samadhaan) chooses the cheapest action; a ReAct agent answers questions in the owner's language and shows its reasoning; and early-warning detection keeps watch. Everything ends in a one-tap action with a UPI link that lets the customer pay on the spot.</p>
-  <p style="font-size:10pt">It is a working, deployed product rather than a concept: payment dates predicted with 56% less error than due dates in back-testing, an agent that answers in under a second without any paid AI service, and a built-in way to prove its own impact.</p>
+  <p style="font-size:10pt">It is a working, deployed product rather than a concept: payment dates predicted with 56% less error than due dates in back-testing, an agent that answers in about two seconds without any paid AI service, and a built-in way to prove its own impact.</p>
   <div class="card ai" style="margin-top:8pt;display:grid;grid-template-columns:1fr 1fr;gap:10pt">
     <div><div class="tiny" style="color:#4338ca;font-weight:800;letter-spacing:.08em">LIVE DEMO</div><div style="font-size:11pt;font-weight:700">paypredict-ad5f.onrender.com</div><div class="small muted">"Try the live demo" · guided tour · AI Copilot</div></div>
     <div><div class="tiny" style="color:#4338ca;font-weight:800;letter-spacing:.08em">SOURCE CODE</div><div style="font-size:11pt;font-weight:700">github.com/a-zax/paypredict</div><div class="small muted">FastAPI · React · scikit-learn · 50 automated tests</div></div>
