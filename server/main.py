@@ -16,7 +16,7 @@ from pydantic import BaseModel, EmailStr, Field as PField
 from sqlmodel import Session, select
 
 from . import actions as A
-from . import agent, assistant, credit, ingest
+from . import agent, assistant, credit, ingest, intel
 from . import payments as P
 from . import services as S
 from .config import PUBLIC_URL, SECRET
@@ -538,7 +538,7 @@ class ChatIn(BaseModel):
 
 @app.post("/api/assistant")
 def chat(body: ChatIn, ctx=Depends(current), s: Session = Depends(get_session)):
-    """Claude when a key is configured; otherwise the on-device PayPredict Agent - the assistant always works."""
+    """Claude when a key is configured; otherwise Munim AI, the on-device agent - the assistant always works."""
     _, org = ctx
     if assistant.configured():
         out = assistant.chat(s, org, body.messages)
@@ -567,6 +567,33 @@ def alerts(ctx=Depends(current), s: Session = Depends(get_session)):
 def explain(inv_id: int, ctx=Depends(current), s: Session = Depends(get_session)):
     _, org = ctx
     return agent.explain_invoice(s, org, _own_invoice(s, org, inv_id))
+
+
+class ReplyIn(BaseModel):
+    text: str = PField(min_length=2, max_length=1000)
+    lang: Optional[str] = PField(None, pattern="^(en|hi|mr)$")
+
+
+@app.post("/api/invoices/{inv_id}/read-reply")
+def read_reply(inv_id: int, body: ReplyIn, ctx=Depends(current), s: Session = Depends(get_session)):
+    """Munim reads a customer's reply: intent, promised date, amount, bank reference, promise reliability, next step."""
+    _, org = ctx
+    return intel.read_reply(s, org, _own_invoice(s, org, inv_id), body.text, body.lang)
+
+
+@app.get("/api/ai/personas")
+def ai_personas(ctx=Depends(current), s: Session = Depends(get_session)):
+    return intel.personas(s, ctx[1])
+
+
+@app.get("/api/ai/anomalies")
+def ai_anomalies(ctx=Depends(current), s: Session = Depends(get_session)):
+    return intel.anomalies(s, ctx[1], limit=8)
+
+
+@app.get("/api/ai/health")
+def ai_health(ctx=Depends(current), s: Session = Depends(get_session)):
+    return intel.model_health(s, ctx[1])
 
 
 @app.get("/api/health")

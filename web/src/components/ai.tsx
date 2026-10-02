@@ -82,11 +82,11 @@ export function ReasoningTrace({ steps, animate = false, defaultOpen = false, ms
 export function EngineBadge({ engine, small }: { engine?: string; small?: boolean }) {
   const claude = engine === "claude";
   return (
-    <span title={claude ? "Answered by Claude using tools over your data" : "On-device ReAct agent: intent model + planner + tools over your data"}
+    <span title={claude ? "Answered by Claude using tools over your data" : "Munim AI on-device ReAct agent: intent model + planner + tools over your data"}
       className={cx("inline-flex items-center gap-1 rounded-full font-medium ring-1 ring-inset",
         small ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-[11px]",
         claude ? "bg-amber-50 text-amber-800 ring-amber-600/20" : "bg-violet-100 text-violet-700 ring-violet-600/20 dark:bg-violet-500/15 dark:text-violet-200")}>
-      {claude ? <Sparkles className="size-3" /> : <Cpu className="size-3" />}{claude ? "Claude" : "PayPredict Agent"}
+      {claude ? <Sparkles className="size-3" /> : <Cpu className="size-3" />}{claude ? "Claude" : "On-device"}
     </span>
   );
 }

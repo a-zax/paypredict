@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp, Bot, FileText, RotateCcw, User2, X } from "lucide-react";
+import { ArrowUp, Bot, FileText, Mic, MicOff, RotateCcw, User2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
+import { useT } from "../lib/i18n";
 import { EngineBadge, Md, ReasoningTrace, type AgentReply } from "./ai";
 import { useDrawers } from "./Drawers";
 
@@ -13,8 +14,13 @@ const STARTERS = [
   { q: "How much cash will come in this month?", hint: "1,000 simulated futures" },
   { q: "Any warnings? Who is getting slower?", hint: "Behaviour-change detection" },
   { q: "Should I accept an order of 5 lakh from Deccan Electricals?", hint: "Credit check before dispatch" },
+  { q: "Kaveri replied: will pay by next Friday", hint: "Reads replies, checks if the promise will hold" },
+  { q: "What types of customers do I have?", hint: "Personas by clustering (K-means)" },
+  { q: "Any unusual invoices?", hint: "Anomaly detection (Isolation Forest)" },
   { q: "किसे कॉल करूं? मेसेज हिंदी में लिखो", hint: "Hindi / Hinglish / Marathi" },
 ];
+
+const VOICE_LANG = { en: "en-IN", hi: "hi-IN", mr: "mr-IN" } as const;
 
 export function Assistant({ open, onClose, initialQuestion }: { open: boolean; onClose: () => void; initialQuestion?: string }) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -23,6 +29,24 @@ export function Assistant({ open, onClose, initialQuestion }: { open: boolean; o
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
   const { openInvoice, openCustomer } = useDrawers();
+  const { lang } = useT();
+  const [listening, setListening] = useState(false);
+  const rec = useRef<any>(null);
+  const SR = typeof window !== "undefined" ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
+  // Voice questions in English, Hindi or Marathi (browser speech recognition; the transcript goes to Munim like typed text).
+  function toggleVoice() {
+    if (listening) { rec.current?.stop(); return; }
+    const r = new SR();
+    r.lang = VOICE_LANG[lang]; r.interimResults = true; r.maxAlternatives = 1;
+    r.onresult = (e: any) => {
+      const txt = Array.from(e.results).map((x: any) => x[0].transcript).join(" ");
+      setInput(txt);
+      if (e.results[e.results.length - 1].isFinal) { r.stop(); send(txt); }
+    };
+    r.onend = () => setListening(false);
+    r.onerror = () => setListening(false);
+    rec.current = r; setListening(true); r.start();
+  }
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy]);
   useEffect(() => { if (open) setTimeout(() => box.current?.focus(), 250); }, [open]);
   const asked = useRef(false);
@@ -54,13 +78,13 @@ export function Assistant({ open, onClose, initialQuestion }: { open: boolean; o
       {open && (
         <div className="fixed inset-0 z-50">
           <motion.div className="absolute inset-0 bg-slate-950/30" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
-          <motion.section role="dialog" aria-label="AI Copilot" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 32, stiffness: 320 }}
+          <motion.section role="dialog" aria-label="Munim AI" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 32, stiffness: 320 }}
             className="absolute right-0 top-0 flex h-full w-full max-w-lg flex-col bg-[var(--bg)] shadow-[var(--shadow-pop)]">
             <header className="flex items-center gap-3 border-b line bg-[var(--surface)] px-5 py-3.5">
               <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 text-white shadow-md shadow-violet-600/30"><Bot className="size-5" /></span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 font-semibold ink">AI Copilot <EngineBadge engine={msgs.at(-1)?.meta?.engine ?? "local"} small /></div>
-                <div className="truncate text-xs ink-3">Plans, uses tools on your ledger, shows its reasoning</div>
+                <div className="flex items-center gap-2 font-semibold ink">Munim AI <EngineBadge engine={msgs.at(-1)?.meta?.engine ?? "local"} small /></div>
+                <div className="truncate text-xs ink-3">Your AI munim · plans, uses tools on your ledger, shows its reasoning</div>
               </div>
               {msgs.length > 0 && <button onClick={() => setMsgs([])} aria-label="New conversation" title="New conversation" className="focus-ring grid size-9 place-items-center rounded-full ink-3 hover:bg-[var(--surface-2)]"><RotateCcw className="size-4" /></button>}
               <button onClick={onClose} aria-label="Close" className="focus-ring grid size-9 place-items-center rounded-full ink-2 hover:bg-[var(--surface-2)]"><X className="size-4" /></button>
@@ -70,8 +94,8 @@ export function Assistant({ open, onClose, initialQuestion }: { open: boolean; o
               {msgs.length === 0 && (
                 <div>
                   <div className="rounded-2xl bg-gradient-to-br from-brand-50 to-violet-50 p-4 dark:from-brand-500/10 dark:to-violet-500/10">
-                    <div className="text-sm font-semibold ink">Ask me anything about getting paid.</div>
-                    <p className="mt-1 text-xs leading-relaxed ink-2">I understand English, Hinglish, हिंदी and मराठी. For every question I make a plan, call tools on your real invoices
+                    <div className="text-sm font-semibold ink">Namaste! I'm Munim, your AI credit manager.</div>
+                    <p className="mt-1 text-xs leading-relaxed ink-2">Like a trusted munim, I know who owes what. Ask in English, Hinglish, हिंदी or मराठी - or tap the mic. For every question I make a plan, call tools on your real invoices
                       (predictions, forecasts, grades, credit checks) and show each step, so you can see exactly why I answer the way I do.</p>
                   </div>
                   <div className="mt-4 grid gap-2">
@@ -132,8 +156,14 @@ export function Assistant({ open, onClose, initialQuestion }: { open: boolean; o
               <div className="flex items-end gap-2 rounded-2xl border line bg-[var(--bg)] p-2 focus-within:border-violet-400">
                 <textarea ref={box} value={input} onChange={(e) => setInput(e.target.value)} rows={1}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-                  placeholder="Ask in English, हिंदी or मराठी…" aria-label="Ask the AI"
+                  placeholder={listening ? "Listening…" : "Ask in English, हिंदी or मराठी…"} aria-label="Ask the AI"
                   className="max-h-32 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm ink outline-none placeholder:text-[var(--ink-3)]" />
+                {SR && (
+                  <button type="button" onClick={toggleVoice} aria-label={listening ? "Stop listening" : "Ask by voice"} title={`Ask by voice (${VOICE_LANG[lang]})`}
+                    className={`focus-ring grid size-9 place-items-center rounded-xl ${listening ? "animate-pulse bg-rose-500 text-white" : "ink-2 hover:bg-[var(--surface-2)]"}`}>
+                    {listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                  </button>
+                )}
                 <button type="submit" disabled={!input.trim() || busy} aria-label="Send"
                   className="focus-ring grid size-9 place-items-center rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 text-white disabled:opacity-40"><ArrowUp className="size-4" /></button>
               </div>

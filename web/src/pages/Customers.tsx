@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDrawers } from "../components/Drawers";
+import { usePersonas } from "../components/AILab";
 import { Button, Card, Empty, Grade, Select, Skeleton } from "../components/ui";
 import { api, type Customer } from "../lib/api";
 import { cx, inrShort, lateness } from "../lib/format";
@@ -22,15 +23,19 @@ export function Customers() {
   const { openCustomer } = useDrawers();
   const { data, isLoading } = useQuery<Customer[]>({ queryKey: ["buyers"], queryFn: () => api("/buyers") });
   const [grade, setGrade] = useState<string | null>(null);
+  const { data: personas } = usePersonas();
+  const [persona, setPersona] = useState<string | null>(null);
+  const pOf = (id: number) => personas?.by_customer?.[String(id)];
+  const pInfo = (k?: string) => personas?.groups.find((g) => g.key === k);
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(PAGE);
-  useEffect(() => setLimit(PAGE), [grade, q, sort]);
+  useEffect(() => setLimit(PAGE), [grade, q, sort, persona]);
   const counts = useMemo(() => {
     const c: Record<string, { n: number; amt: number }> = { A: { n: 0, amt: 0 }, B: { n: 0, amt: 0 }, C: { n: 0, amt: 0 }, D: { n: 0, amt: 0 } };
     data?.forEach((b) => { if (b.grade) { c[b.grade].n++; c[b.grade].amt += b.open_amount; } });
     return c;
   }, [data]);
-  const rows = (data ?? []).filter((b) => (!grade || b.grade === grade) && (!q || b.name.toLowerCase().includes(q.toLowerCase())))
+  const rows = (data ?? []).filter((b) => (!grade || b.grade === grade) && (!persona || pOf(b.id) === persona) && (!q || b.name.toLowerCase().includes(q.toLowerCase())))
     .sort((a, b) => sort === "owed" ? b.open_amount - a.open_amount : sort === "slow" ? (b.avg_days_late ?? -99) - (a.avg_days_late ?? -99)
       : sort === "grade" ? (a.grade ?? "Z").localeCompare(b.grade ?? "Z") : b.at_risk - a.at_risk);
   const totalOpen = Object.values(counts).reduce((a, c) => a + c.amt, 0) || 1;
@@ -50,6 +55,23 @@ export function Customers() {
           </button>
         ))}
       </div>
+
+      {personas?.available && (
+        <div className="mt-5" data-tour="personas">
+          <div className="flex items-baseline gap-2"><h2 className="text-sm font-semibold ink">Payment personas</h2>
+            <span className="text-xs ink-3">grouped by machine learning (K-means on 5 behaviour signals) · tap to filter</span></div>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {personas.groups.map((g) => (
+              <button key={g.key} onClick={() => setPersona(persona === g.key ? null : g.key)} title={g.strategy}
+                className={cx("focus-ring card min-w-[150px] shrink-0 px-3 py-2.5 text-left transition", persona === g.key ? "ring-2 ring-brand-500" : "hover:-translate-y-0.5")}>
+                <div className="flex items-center gap-1.5 text-sm font-medium ink"><span className="size-2.5 rounded-full" style={{ background: g.color }} />{g.label}</div>
+                <div className="mt-0.5 text-xs ink-3">{g.customers} customers · {inrShort(g.owed)}</div>
+              </button>
+            ))}
+          </div>
+          {persona && <p className="mt-1 text-xs ink-2"><b className="ink">Strategy:</b> {pInfo(persona)?.strategy} · <button onClick={() => setPersona(null)} className="font-medium text-brand-600">show all</button></p>}
+        </div>
+      )}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
@@ -77,7 +99,7 @@ export function Customers() {
                   className="focus-ring grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 text-left hover:bg-[var(--surface-2)] md:grid-cols-[2.4fr_1fr_1fr_1fr_1.8fr] md:px-5">
                   <div className="flex min-w-0 items-center gap-3">
                     <Grade g={b.grade} />
-                    <div className="min-w-0"><div className="truncate text-sm font-medium ink" title={b.name}>{b.name}</div><div className="text-xs ink-3">{b.open_count} unpaid · {b.invoices_12m} paid this year</div></div>
+                    <div className="min-w-0"><div className="truncate text-sm font-medium ink" title={b.name}>{b.name}</div><div className="flex items-center gap-1.5 text-xs ink-3">{pInfo(pOf(b.id)) && <span className="inline-flex items-center gap-1 rounded-full surface-2 px-1.5 py-px ink-2"><span className="size-1.5 rounded-full" style={{ background: pInfo(pOf(b.id))!.color }} />{pInfo(pOf(b.id))!.label}</span>}{b.open_count} unpaid · {b.invoices_12m} paid this year</div></div>
                   </div>
                   <div className="text-right text-sm font-semibold num ink">{inrShort(b.open_amount)}</div>
                   <div className={cx("hidden text-right text-sm num md:block", b.overdue_amount > 0 ? "text-rose-600 dark:text-rose-400" : "ink-3")}>{b.overdue_amount > 0 ? inrShort(b.overdue_amount) : "-"}</div>

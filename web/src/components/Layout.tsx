@@ -46,7 +46,7 @@ function Layout({ tourKey }: { tourKey: string }) {
   const { logout } = useAuthActions();
   const { start, active: touring } = useTour();
   const nav = useNavigate();
-  // Deep link: ?ask=<question> opens the AI Copilot and asks it straight away (shareable demos).
+  // Deep link: ?ask=<question> opens Munim AI and asks it straight away (shareable demos).
   const [initialAsk] = useState(() => new URLSearchParams(window.location.search).get("ask") || "");
   const [askOpen, setAskOpen] = useState(!!initialAsk);
   const [palette, setPalette] = useState(false);
@@ -100,7 +100,7 @@ function Layout({ tourKey }: { tourKey: string }) {
         <button data-tour="ask" onClick={() => setAskOpen(true)}
           className="focus-ring mt-5 flex items-center gap-3 rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 px-3 py-3 text-left text-sm font-medium text-white shadow-lg shadow-brand-600/25 transition-transform hover:scale-[1.01]">
           <Sparkles className="size-[18px]" />
-          <span className="flex-1">{t("ask")}<span className="block text-xs font-normal text-white/75">Plans, reasons and acts on your data</span></span>
+          <span className="flex-1">{t("ask")}<span className="block text-xs font-normal text-white/75">Your AI munim - reasons and acts on your data</span></span>
           <kbd className="rounded bg-white/20 px-1.5 text-[11px]">A</kbd>
         </button>
         <div className="mt-auto space-y-1 pt-6">
@@ -154,7 +154,7 @@ function Layout({ tourKey }: { tourKey: string }) {
           </NavLink>
         ))}
         <button data-tour="ask" onClick={() => setAskOpen(true)} className="flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium text-violet-600 dark:text-violet-300">
-          <Sparkles className="size-[18px]" />Ask AI
+          <Sparkles className="size-[18px]" />Ask Munim
         </button>
         <button onClick={() => setMore(true)} aria-label="More" className="flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ink-3">
           <Menu className="size-[18px]" />More

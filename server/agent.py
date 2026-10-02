@@ -1,5 +1,6 @@
 """
-PayPredict Agent - an on-device ReAct agent (no external LLM needed).
+Munim AI - PayPredict's on-device ReAct agent (no external LLM needed). A munim is the trusted accountant
+of an Indian business who knows who owes what and when to ask.
 
   understand  ->  plan  ->  act (call tools)  ->  observe  ->  reason  ->  answer
 
@@ -21,7 +22,7 @@ from sklearn.pipeline import make_pipeline
 from sqlmodel import Session, select
 
 from . import actions as A
-from . import credit, ml
+from . import credit, intel, ml
 from . import services as S
 from .assistant import run_tool
 from .db import Buyer, Invoice, Org
@@ -58,6 +59,17 @@ EXAMPLES = {
                "kitna fayda hua", "कितना फायदा हुआ", "results so far", "how good is the model"],
     "legal": ["how much interest can i claim", "msmed interest", "legal notice", "45 day law", "section 43b", "interest owed",
               "kanooni notice", "ब्याज कितना बनता है", "samadhaan", "can i charge interest"],
+    "reply": ["kaveri replied will pay next friday", "shivneri said payment by month end", "customer says material damaged",
+              "deccan says they already paid", "reply from narmada: send invoice copy", "read this reply", "what does this reply mean",
+              "they replied kal tak payment ho jayega", "customer ne bola paisa nahi hai", "ग्राहक ने कहा अगले हफ्ते भुगतान करेंगे",
+              "ग्राहकाने सांगितले पुढच्या आठवड्यात पेमेंट", "he says he will pay on 15th", "they said grn pending"],
+    "personas": ["what types of customers do i have", "segment my customers", "group customers by behaviour", "customer personas",
+                 "cluster my customers", "kis type ke customer hain", "ग्राहकों के प्रकार", "ग्राहकांचे प्रकार", "customer segments",
+                 "which customers behave similarly"],
+    "anomaly": ["any unusual invoices", "check for duplicate invoices", "any data entry errors", "anomalies in invoices", "suspicious bills",
+                "koi galat entry", "kuch ajeeb invoice", "गलत एंट्री", "चुकीची नोंद", "odd invoices", "fraud check"],
+    "health": ["is the model still accurate", "model drift", "calibration", "can i still trust the ai", "is the data changing",
+               "model health", "does the model need retraining", "मॉडल सही है क्या", "how reliable are the probabilities"],
     "help": ["hi", "hello", "what can you do", "help", "namaste", "नमस्ते", "who are you", "how do i use this", "thanks", "ok"],
 }
 _texts, _labels = zip(*[(t, k) for k, v in EXAMPLES.items() for t in v])
@@ -68,7 +80,8 @@ INTENT_LABEL = {
     "briefing": "daily briefing", "priority": "who to chase today", "cash": "cash forecast", "risky": "risky customers",
     "customer": "customer profile", "overdue": "overdue invoices", "draft": "draft a message", "credit": "credit check",
     "explain": "explain a prediction", "alerts": "early warnings", "impact": "AI accuracy & impact", "legal": "legal interest",
-    "help": "help",
+    "help": "help", "reply": "read a customer reply", "personas": "customer personas", "anomaly": "anomaly check",
+    "health": "model health",
 }
 
 # ------------------------------------------------------------------ 2. entity extraction
@@ -207,7 +220,7 @@ def run(s: Session, org: Org, question: str, force_intent: str | None = None) ->
     lang, amount, days, weeks = _lang(question), _amount(question), _days(question), _weeks(question)
     inv_no = re.search(r"inv[-\s]?\d{3,6}", question, re.I)
     # entity-driven corrections (a named customer + money usually means a credit check, etc.)
-    if amount and cust and intent not in ("credit", "legal"):
+    if amount and cust and intent not in ("credit", "legal", "reply"):
         intent, conf = "credit", max(conf, 0.6)
     elif cust and intent in ("help", "briefing", "risky", "priority") and conf < 0.5:
         intent = "customer"
@@ -242,6 +255,8 @@ def _briefing(s, org, tr, e):
     alerts = tr.step("Has anyone's behaviour changed recently? Run early-warning detection.", "detect_behaviour_changes()",
                      lambda: customer_alerts(s, org, 3),
                      lambda o: f"{len(o)} warning(s)" + (": " + "; ".join(a["name"][:24] for a in o) if o else ""))
+    odd = tr.step("Scan invoices for anything unusual (duplicates, odd amounts or credit periods).", "anomaly_check()",
+                  lambda: intel.anomalies(s, org, 2), lambda o: f"{len(o)} unusual invoice(s)" + (": " + o[0]["number"] if o else ""))
     tr.steps.append(dict(thought="Combine: lead with the cash outlook, then the 3 actions, then the warnings.",
                          action="compose_answer()", observation="Briefing ready.", ms=0))
     lines = [f"**You're owed {A.short_inr(sm['outstanding'])}.** Over the next 4 weeks expect about "
@@ -250,7 +265,10 @@ def _briefing(s, org, tr, e):
     lines += [f"- {v['buyer_name']} ({A.short_inr(v['amount'])}): {_lc(v['action_title'])}" for v in acts]
     if alerts:
         lines += ["", "**Watch out:**"] + [f"- {a['text']}" for a in alerts[:2]]
-    return {"reply": "\n".join(lines), "links": [_link_inv(v) for v in acts],
+    if odd:
+        lines += ["", f"**Check:** {odd[0]['name']} {odd[0]['number']} ({A.short_inr(odd[0]['amount'])}) - {_lc(odd[0]['reasons'][0])}."]
+    return {"reply": "\n".join(lines),
+            "links": [_link_inv(v) for v in acts] + [{"type": "invoice", "id": o["invoice_id"], "label": f"Check {o['number']}"} for o in odd[:1]],
             "suggestions": ["How much cash will come in this month?", "Who is getting slower?", "Who are my worst payers?"]}
 
 
@@ -378,6 +396,12 @@ def _credit(s, org, tr, e):
     lines = [f"**{r['headline']}** for {A.inr(amt)} to {b.name} on {days}-day credit.",
              f"- Expected payment ~{_date(r['expected_pay_date'])} ({r['p_late']:.0%} chance of 15+ days late)."]
     lines += [f"- {c}" for c in r["conditions"][:3]]
+    wi = r.get("what_if") or []
+    if len(wi) > 1:
+        tr.steps.append(dict(thought="What if I change the credit period? Re-score the same order at 15-60 days.",
+                             action="what_if(credit_days=[15, 30, 45, 60])",
+                             observation="; ".join(f"{w['credit_days']}d -> cash in ~{w['days_to_cash']:.0f}d" for w in wi), ms=0))
+        lines.append("- What-if: " + ", ".join(f"{w['credit_days']}-day credit -> cash in ~{w['days_to_cash']:.0f} days" for w in wi))
     if not e["amount"]:
         lines.append("_I assumed ₹1,00,000 - tell me the order value for an exact check._")
     return {"reply": "\n".join(lines), "links": [{"type": "customer", "id": b.id, "label": b.name[:30]}],
@@ -452,16 +476,84 @@ def _legal(s, org, tr, e):
 
 def _help(s, org, tr, e):
     tr.steps.append(dict(thought="General question - explain what I can do.", action="compose_answer()", observation="Done.", ms=0))
-    return {"reply": "I'm your AI credit manager. I look at your real invoices and can:\n"
+    return {"reply": "I'm **Munim AI**, your AI credit manager. I look at your real invoices and can:\n"
                      "- tell you **who to chase today** and why\n- **forecast your cash** for the coming weeks\n"
                      "- spot **customers who are slowing down**\n- **check a new order** before you give credit\n"
-                     "- **explain** any prediction, and **write the message** in English, हिंदी or मराठी",
+                     "- **explain** any prediction, and **write the message** in English, हिंदी or मराठी\n"
+                     "- **read a customer's reply** and tell you if the promise will hold\n"
+                     "- group customers into **personas** and flag **unusual invoices**",
             "suggestions": ["Brief me on today", "Who should I call first?", "How much cash will come this month?", "Any warnings?"]}
+
+
+def _reply_text(q: str) -> str:
+    m = re.search(r"(?:replied|reply(?: from [^:]+)?|says?|said|ne bola|ne kaha|ने कहा|ने बोला|सांगितले)\s*[:,-]?\s*(?:that\s+)?(.+)$", q, re.I | re.S)
+    return (m.group(1) if m else q).strip(" \"'")
+
+
+def _reply(s, org, tr, e):
+    inv = tr.step("Which invoice is this reply about? (named invoice, or the customer's most urgent one)", "find_invoice()",
+                  lambda: _target_invoice(s, org, e), lambda o: f"{o.number} ({A.short_inr(o.amount)})" if o else "none found")
+    if not inv:
+        return _need_customer(e, "read the reply from")
+    text = _reply_text(e["question"])
+    r = tr.step("Classify the reply and pull out any date, amount or bank reference.", f"read_reply(text='{text[:60]}')",
+                lambda: intel.read_reply(s, org, inv, text, e["lang"] if e["lang"] != "en" else None),
+                lambda o: f"{o['label']} ({o['confidence']:.0%})" + (f"; date {o['when']}" if o["when"] else "")
+                          + (f"; ref {o['reference']}" if o["reference"] else "") + (f"; amount {A.inr(o['amount'])}" if o["amount"] else ""))
+    b = s.get(Buyer, inv.buyer_id)
+    lines = [f"**{r['label']}** from {b.name} about {inv.number}."]
+    if r.get("p_keep") is not None:
+        tr.steps.append(dict(thought="How likely is the promise to hold? Read the survival model's chance of payment by that date, "
+                                     "blended with their record on past promises.", action="promise_reliability()",
+                             observation=f"{r['p_keep']:.0%} (model {r['p_model']:.0%}; past promises kept {r['promises_kept']}/{r['promises_total']}).", ms=0))
+        lines.append(f"- Chance they actually pay by {_date(r['when'])}: **{r['p_keep']:.0%}**.")
+    lines += [f"- Next step: {r['next_step']}", "", "Suggested reply:", "", r["reply"]]
+    return {"reply": "\n".join(lines), "links": [{"type": "invoice", "id": inv.id, "label": f"Open {inv.number} to apply"}],
+            "suggestions": [f"Tell me about {b.name}", "Who should I call first?"]}
+
+
+def _personas(s, org, tr, e):
+    p = tr.step("Describe each customer by 5 behaviour signals (usual delay, unpredictability, share 15+ days late, recent change, "
+                "festive slow-down) and cluster them with K-means.", "cluster_customers(k=5)", lambda: intel.personas(s, org),
+                lambda o: (f"{o['n']} customers in 5 personas; silhouette {o['silhouette']:.2f}" if o.get("available") else o.get("reason", "")))
+    if not p.get("available"):
+        return {"reply": p.get("reason", "Not enough history yet.")}
+    lines = ["Your customers fall into these payment personas:"]
+    lines += [f"- **{g['label']}** - {g['customers']} customers, owe {A.short_inr(g['owed'])}. {g['strategy']}" for g in p["groups"]]
+    return {"reply": "\n".join(lines), "suggestions": ["Who is getting slower?", "Any unusual invoices?"]}
+
+
+def _anomaly(s, org, tr, e):
+    a = tr.step("Score every recent invoice with an Isolation Forest on amount vs usual, credit period vs usual and timing; "
+                "also check for duplicates.", "anomaly_check()", lambda: intel.anomalies(s, org, 5), lambda o: f"{len(o)} unusual invoice(s).")
+    if not a:
+        return {"reply": "Nothing unusual - amounts, credit periods and timing all look normal for each customer."}
+    lines = ["These unpaid invoices look unusual - worth a quick check before you chase them:"]
+    lines += [f"- **{x['name']}** {x['number']} ({A.short_inr(x['amount'])}): {_lc(x['reasons'][0])}" for x in a]
+    return {"reply": "\n".join(lines), "links": [{"type": "invoice", "id": x["invoice_id"], "label": x["number"]} for x in a[:3]],
+            "suggestions": ["Brief me on today", "Is the model still accurate?"]}
+
+
+def _health(s, org, tr, e):
+    h = tr.step("Compare recent invoices with the history the model learned from (population stability index) and read its calibration.",
+                "model_health()", lambda: intel.model_health(s, org),
+                lambda o: f"status {o.get('status')}; worst drift PSI {max((d['psi'] for d in o.get('drift', [])), default=0):.2f}"
+                          + (f"; calibration error {o['ece']:.1%}" if o.get("ece") is not None else ""))
+    if not h.get("available"):
+        return {"reply": "Not enough data to check model health yet."}
+    msg = {"stable": "**The model is healthy.** Recent invoices look like the ones it learned from, so its predictions still apply.",
+           "watch": "**Worth watching.** Some recent invoices differ from the history - the model still works, but retrain soon.",
+           "retrain": "**Retrain recommended.** Recent invoices look quite different from what the model learned."}[h["status"]]
+    lines = [msg] + [f"- {d['label']}: {d['status']} (PSI {d['psi']:.2f})" for d in h["drift"]]
+    if h.get("ece") is not None:
+        lines.append(f"- Calibration: when it says X% risk, the real rate is within ~{h['ece']:.0%} on average.")
+    return {"reply": "\n".join(lines), "suggestions": ["How accurate is the AI?", "Any unusual invoices?"]}
 
 
 HANDLERS = {"briefing": _briefing, "priority": _priority, "cash": _cash, "risky": _risky, "customer": _customer,
             "overdue": _overdue, "draft": _draft, "credit": _credit, "explain": _explain, "alerts": _alerts,
-            "impact": _impact, "legal": _legal, "help": _help}
+            "impact": _impact, "legal": _legal, "help": _help, "reply": _reply, "personas": _personas, "anomaly": _anomaly,
+            "health": _health}
 
 
 # ------------------------------------------------------------------ 5. explainability for one invoice

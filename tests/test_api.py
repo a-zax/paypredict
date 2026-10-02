@@ -201,3 +201,73 @@ def test_briefing_alerts_explain_and_ai_insights(client, org_a):
     assert {"predicted_days", "typical_days", "factors"} <= ex.keys()
     ai = client.get("/api/model", headers=org_a).json()["ai"]
     assert ai["importance"] and len(ai["curves"]["risky"]) == 8 and abs(sum(ai["curves"]["risky"]) - 1) < 0.01
+
+
+# ------------------------------------------------------------------ more AI: replies, personas, anomalies, health, what-if
+def _open_invoice(client, h):
+    return client.get("/api/invoices?status=open&limit=1", headers=h).json()["items"][0]
+
+
+def test_reply_reader_understands_and_suggests(client, org_a):
+    inv = _open_invoice(client, org_a)
+    cases = {"Sir, payment will be released next Friday": "PROMISE", "NEFT done, UTR 452198763321": "PAID",
+             "material damaged and quantity short": "DISPUTE", "please send invoice copy, GRN pending": "DOCS",
+             "abhi paisa nahi hai": "CASH_CRUNCH", "ok noted": "ACK"}
+    for text, intent in cases.items():
+        r = client.post(f"/api/invoices/{inv['id']}/read-reply", headers=org_a, json={"text": text}).json()
+        assert r["intent"] == intent, (text, r["intent"])
+        assert r["next_step"] and r["reply"] and r["apply"][0]["kind"] == "NOTE"
+    r = client.post(f"/api/invoices/{inv['id']}/read-reply", headers=org_a, json={"text": "will pay by next Friday"}).json()
+    assert r["when"] and 0 <= r["p_keep"] <= 1 and any(a["kind"] == "PROMISE" for a in r["apply"])
+    r = client.post(f"/api/invoices/{inv['id']}/read-reply", headers=org_a, json={"text": "NEFT done UTR 452198763321"}).json()
+    assert r["reference"] == "452198763321" and r["amount"] is None      # a UTR is not an amount
+    r = client.post(f"/api/invoices/{inv['id']}/read-reply", headers=org_a, json={"text": "हम अगले हफ्ते भुगतान कर देंगे"}).json()
+    assert r["intent"] == "PROMISE" and r["lang"] == "hi" and "नमस्ते" in r["reply"]
+
+
+def test_parse_when_handles_indian_phrasings():
+    from datetime import date
+    from server.intel import parse_when
+    t = date(2026, 10, 2)                       # a Friday
+    assert parse_when("will pay tomorrow", t)[0] == date(2026, 10, 3)
+    assert parse_when("kal tak payment ho jayega", t)[0] == date(2026, 10, 3)
+    assert parse_when("payment on monday", t)[0] == date(2026, 10, 5)
+    assert parse_when("15 tarikh ko denge", t)[0] == date(2026, 10, 15)
+    assert parse_when("by 20/10", t)[0] == date(2026, 10, 20)
+    assert parse_when("in 10 days", t)[0] == date(2026, 10, 12)
+    assert parse_when("payment by month end", t)[0] == date(2026, 10, 31)
+    assert parse_when("ok noted", t)[0] is None
+
+
+def test_personas_anomalies_health_and_what_if(client, org_a):
+    p = client.get("/api/ai/personas", headers=org_a).json()
+    assert p["available"] and len(p["groups"]) == 5 and sum(g["customers"] for g in p["groups"]) == p["n"]
+    by = {g["key"]: g["profile"] for g in p["groups"]}
+    assert by["punctual"]["avg_late"] < by["steady"]["avg_late"]          # names match behaviour
+    assert by["slipping"]["trend"] == max(g["trend"] for g in by.values())
+    a = client.get("/api/ai/anomalies", headers=org_a).json()
+    assert isinstance(a, list) and all(x["reasons"] for x in a)
+    h = client.get("/api/ai/health", headers=org_a).json()
+    assert h["available"] and h["status"] in ("stable", "watch", "retrain") and h["drift"]
+    m = client.get("/api/model", headers=org_a).json()["metrics"]
+    assert m["calibration"] and 0 <= m["brier"] <= 0.25 and m["ece"] < 0.2
+    buyers = client.get("/api/buyers", headers=org_a).json()
+    b = next(x for x in buyers if x["open_amount"] > 0)
+    r = client.post("/api/credit-check", headers=org_a, json={"buyer_id": b["id"], "amount": 200000, "credit_days": 30}).json()
+    wi = r["what_if"]
+    assert [w["credit_days"] for w in wi] == [15, 30, 45, 60]
+    assert all(wi[i]["days_to_cash"] < wi[i + 1]["days_to_cash"] for i in range(3))   # longer credit, later cash
+
+
+def test_agent_new_skills(client, org_a):
+    cases = {"What types of customers do I have?": "personas", "any unusual invoices?": "anomaly",
+             "is the model still accurate?": "health"}
+    for q, intent in cases.items():
+        r = _ask(client, org_a, q)
+        assert r["intent"] == intent and len(r["steps"]) >= 2, (q, r["intent"])
+    buyers = client.get("/api/buyers", headers=org_a).json()
+    name = next(b["name"] for b in buyers if b["open_amount"] > 0 and not b["name"].startswith("Govt"))
+    r = _ask(client, org_a, f"{name} replied: will pay by next Friday")
+    assert r["intent"] == "reply" and "Promise to pay" in r["reply"]
+    r = _ask(client, org_a, "hi")
+    assert "Munim" in r["reply"]

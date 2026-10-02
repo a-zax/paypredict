@@ -210,7 +210,15 @@ def backtest(df: pd.DataFrame, today: date) -> dict:
     top = np.argsort(-d["p_late"])[: max(1, len(test) // 5)]
     late_amt = test["amount"].values * y
     top_b = np.argsort(-base)[: max(1, len(test) // 5)]
+    # calibration: group test invoices by predicted risk, compare with what actually happened
+    pl = d["p_late"]
+    edges = np.unique(np.quantile(pl, np.linspace(0, 1, 9)))
+    grp = np.clip(np.searchsorted(edges, pl, side="right") - 1, 0, len(edges) - 2)
+    calib = [dict(predicted=float(pl[grp == g].mean()), actual=float(y[grp == g].mean()), n=int((grp == g).sum()))
+             for g in range(len(edges) - 1) if (grp == g).sum() >= 10]
     return {
+        "calibration": calib, "brier": float(np.mean((pl - y) ** 2)),
+        "ece": float(sum(c["n"] * abs(c["predicted"] - c["actual"]) for c in calib) / max(sum(c["n"] for c in calib), 1)),
         "available": True, "n_train": int(len(F_train)), "n_test": int(len(test)),
         "split_date": str(split.date()), "late_rate": float(y.mean()),
         "auc": float(roc_auc_score(y, d["p_late"])) if 0 < y.mean() < 1 else None,

@@ -43,6 +43,10 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Open any invoice to see its timeline: raised, due, today, and the expected payment date with a likely range. The bars show the chance of payment in each period.",
   },
   {
+    route: "/", target: "drawer-reply", optional: true, title: "Munim reads customer replies",
+    body: "Paste what the customer wrote back - in any language. Munim spots a promise, a dispute or a payment reference, estimates whether the promise will hold, and drafts your reply.",
+  },
+  {
     route: "/", target: "drawer-message", optional: true, title: "Ready-to-send message",
     body: "Switch between English, हिंदी and मराठी, edit anything, then send by WhatsApp or email. You always review before anything goes out.",
   },
@@ -55,8 +59,8 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Filter by overdue or high risk, search by customer or invoice number, sort by urgency, and export to Excel for your CA.",
   },
   {
-    route: "/customers", target: "grades", title: "Every customer gets a grade",
-    body: "A = reliable, D = high risk, based on how they actually paid over the last 12 months. Tap a grade to filter; tap a customer to see their payment history and add their WhatsApp number.",
+    route: "/customers", target: "grades", title: "Every customer gets a grade - and a persona",
+    body: "A = reliable, D = high risk, based on how they actually paid. Below, machine learning groups customers into payment personas (Reliable, Steady late, Erratic, Festive-slow, Slipping), each with its own strategy.",
   },
   {
     route: "/cash", target: "cash-chart", title: "Cash flow forecast",
@@ -79,8 +83,8 @@ export const TOUR_STEPS: TourStep[] = [
     body: <>Press <K>Ctrl</K> + <K>K</K> (or tap the search icon) to jump to any customer, invoice or page, or to run a command.</>,
   },
   {
-    route: "/settings", target: "ask", title: "AI Copilot",
-    body: "Ask in English, Hinglish, हिंदी or मराठी: \'Who should I call first?\', \'Should I accept a 5 lakh order from Deccan?\'. It plans, calls tools on your real data and shows its reasoning step by step.",
+    route: "/settings", target: "ask", title: "Munim AI, your AI munim",
+    body: "Ask in English, Hinglish, हिंदी or मराठी, or by voice: \'Who should I call first?\', \'Kaveri replied: will pay Friday\', \'Any unusual invoices?\'. Munim plans, calls tools on your real data and shows its reasoning step by step.",
   },
   {
     route: "/settings", target: "help", title: "Help is always here",

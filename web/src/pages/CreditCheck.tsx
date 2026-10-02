@@ -4,6 +4,7 @@ import { CheckCircle2, Copy, OctagonAlert, Search, ShieldAlert, UserPlus } from 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Card, Grade, Input, Segmented } from "../components/ui";
+import { WhatIfTerms, type WhatIf } from "../components/AILab";
 import { api, type Customer, type Lang } from "../lib/api";
 import { LANGS } from "../lib/i18n";
 import { cx, d, inr, inrShort, pct } from "../lib/format";
@@ -15,7 +16,7 @@ type Result = {
   customer: string; grade: string | null; model: string; p_late: number; expected_days_late: number; range: [number, number];
   expected_pay_date: string; expected_days_to_cash: number; delay_cost: number; price_cushion: number; open_amount: number;
   overdue_amount: number; oldest_overdue_days: number; exposure_after: number; suggested_limit: number | null;
-  monthly_billing: number; reasons: string[]; message_lang: Lang;
+  monthly_billing: number; reasons: string[]; message_lang: Lang; what_if?: WhatIf;
 };
 const V = {
   APPROVE: { cls: "from-emerald-500 to-emerald-600", icon: <CheckCircle2 className="size-7" /> },
@@ -169,6 +170,7 @@ export function CreditCheck() {
                   {res.overdue_amount > 0 && <Badge tone="red" className="mt-3">{inrShort(res.overdue_amount)} already overdue · oldest {res.oldest_overdue_days} days</Badge>}
                 </div>
               </div>
+              {res.what_if && <WhatIfTerms rows={res.what_if} current={Number(days)} />}
               {res.message && (
                 <div className="border-t line p-5 sm:p-6">
                   <div className="flex flex-wrap items-center justify-between gap-2">

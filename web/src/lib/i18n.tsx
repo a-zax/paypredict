@@ -9,7 +9,7 @@ const S = {
   insights: { en: "AI & impact", hi: "AI और प्रभाव", mr: "AI आणि परिणाम" },
   new_order: { en: "New order check", hi: "नया ऑर्डर जाँचें", mr: "नवीन ऑर्डर तपासा" },
   settings: { en: "Settings", hi: "सेटिंग्स", mr: "सेटिंग्ज" },
-  ask: { en: "AI Copilot", hi: "AI कोपायलट", mr: "AI कोपायलट" },
+  ask: { en: "Munim AI", hi: "मुनीम AI", mr: "मुनीम AI" },
   owed: { en: "Owed to you", hi: "आपका बकाया", mr: "तुमची येणी" },
   overdue: { en: "Overdue", hi: "देय तिथि पार", mr: "मुदत उलटलेली" },
   likely_late: { en: "Likely to come late", hi: "देर से आने की संभावना", mr: "उशिरा येण्याची शक्यता" },

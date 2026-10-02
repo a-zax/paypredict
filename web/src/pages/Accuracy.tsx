@@ -7,6 +7,7 @@ import { Badge, Button, Card, Empty, Skeleton, Term } from "../components/ui";
 import { api, type Impact } from "../lib/api";
 import { d, inrShort, pct } from "../lib/format";
 import { usePageTitle } from "../lib/theme";
+import { AnomalyList, ModelHealth, PersonaMap } from "../components/AILab";
 
 type ModelInfo = {
   kind: "own" | "starter" | null; trained_at: string | null;
@@ -76,11 +77,14 @@ function ImpactSection() {
 }
 
 const STAGES = [
-  ["Learn habits", "A time-to-payment model learns each customer's payment behaviour from your paid invoices."],
-  ["Predict", "For every unpaid invoice: chance of payment in 8 periods, expected date and likely range."],
-  ["Explain", "Re-runs the model with each factor at a typical value to show what adds days."],
+  ["Predict", "A survival model learns each customer's habits and gives every unpaid invoice a date, range and risk."],
+  ["Explain", "Re-runs the model with each factor at a typical value to show how many days each one adds."],
   ["Decide", "Compares the cost of waiting with each lever and escalates when reminders are ignored."],
-  ["Act & learn", "The agent plans, uses tools, writes messages, and measures the result against its forecast."],
+  ["Converse", "Munim AI (a ReAct agent) understands questions, plans, calls tools and shows its reasoning."],
+  ["Read replies", "NLP reads customer replies: promise, dispute, paid, documents - and how likely a promise is to hold."],
+  ["Group", "K-means clusters customers into payment personas, each with its own strategy."],
+  ["Watch", "Behaviour-change alerts, Isolation-Forest anomaly scan, Monte-Carlo cash simulation."],
+  ["Self-check", "Measures calibration and data drift, so you know when to trust it - and when to retrain."],
 ];
 
 function HowAIWorks({ ai, paid }: { ai: NonNullable<ModelInfo["ai"]>; paid?: number }) {
@@ -90,7 +94,7 @@ function HowAIWorks({ ai, paid }: { ai: NonNullable<ModelInfo["ai"]>; paid?: num
   return (
     <section className="mt-6" data-tour="ai-how">
       <div className="flex items-center gap-2"><Brain className="size-5 text-violet-600" /><h2 className="text-xl font-semibold ink">How the AI works</h2></div>
-      <ol className="mt-4 grid gap-2 sm:grid-cols-5">
+      <ol className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {STAGES.map(([t, b], i) => (
           <li key={t} className="card relative p-3.5">
             <span className="grid size-6 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-violet-600 text-xs font-bold text-white">{i + 1}</span>
@@ -133,7 +137,7 @@ function HowAIWorks({ ai, paid }: { ai: NonNullable<ModelInfo["ai"]>; paid?: num
       </div>
       <p className="mt-2 text-xs ink-3">
         Model: discrete-time survival model with gradient-boosted trees · {ai.features_used} features{paid ? ` · trained on ${paid.toLocaleString("en-IN")} paid invoices` : ""} ·
-        {ai.model === "own" ? " personalised to your ledger" : " starter model until you have enough history"}. The AI Copilot (left menu) can explain any of this in plain words.
+        {ai.model === "own" ? " personalised to your ledger" : " starter model until you have enough history"}. Munim AI (left menu) can explain any of this in plain words.
       </p>
     </section>
   );
@@ -166,6 +170,18 @@ export function Accuracy() {
       </div>
 
       {data.ai?.importance && <HowAIWorks ai={data.ai} paid={m.paid_invoices} />}
+
+      <h2 className="mt-10 text-xl font-semibold ink" data-tour="ai-personas">Customer personas (unsupervised learning)</h2>
+      <p className="text-sm ink-2">No labels needed: the AI finds groups of customers who pay alike, and suggests a strategy for each.</p>
+      <PersonaMap />
+
+      <h2 className="mt-10 text-xl font-semibold ink">Model health</h2>
+      <p className="text-sm ink-2">An AI that checks itself: are its probabilities honest, and does today's data still look like what it learned from?</p>
+      <ModelHealth />
+
+      <h2 className="mt-10 text-xl font-semibold ink">Unusual invoices</h2>
+      <p className="text-sm ink-2">An Isolation Forest flags unpaid invoices whose amount, credit period or timing is out of character for that customer - often a typo or a duplicate.</p>
+      <AnomalyList />
 
       <h2 className="mt-10 text-xl font-semibold ink">What it has done for you</h2>
       <ImpactSection />

@@ -12,6 +12,7 @@ import { useInvoiceActions } from "../lib/useInvoiceActions";
 import { ACTION_ICON, statusLine, withTerms } from "./ActionCard";
 import { PaidModal, PromiseModal } from "./StatusModals";
 import { Avatar, Badge, Button, Card, Drawer, Grade, Input, RiskPill, Segmented, Skeleton, Term, Toggle } from "./ui";
+import { ReplyReader, usePersonas } from "./AILab";
 
 type Ctx = { openInvoice: (id: number) => void; openCustomer: (id: number) => void };
 const DrawerCtx = createContext<Ctx>({ openInvoice: () => {}, openCustomer: () => {} });
@@ -219,6 +220,8 @@ function InvoicePanel({ id, onCustomer }: { id: number; onCustomer: (id: number)
         </Card>
       )}
 
+      {open && <ReplyReader inv={inv} />}
+
       {open && (
         <Card className="mt-4 p-5" data-tour="drawer-status">
           <h3 className="font-semibold ink">Update status</h3>
@@ -270,6 +273,8 @@ function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) 
   const { data: hist } = useQuery<{ number: string; invoice_date: string; amount: number; days_late: number }[]>({ queryKey: ["buyer-history", id], queryFn: () => api(`/buyers/${id}/history`) });
   const { data: open } = useQuery<{ items: Invoice[] }>({ queryKey: ["invoices", "buyer", id], queryFn: () => api(`/invoices?status=open&buyer_id=${id}`) });
   const c = buyers?.find((b) => b.id === id);
+  const { data: personas } = usePersonas();
+  const persona = personas?.groups.find((g) => g.key === personas.by_customer?.[String(id)]);
   const [phone, setPhone] = useState(""); const [email, setEmail] = useState("");
   useEffect(() => { if (c) { setPhone(c.phone); setEmail(c.email); } }, [c?.id]);
   if (!c) return <div className="space-y-4 p-6 pt-16"><Skeleton className="h-20" /><Skeleton className="h-64" /></div>;
@@ -302,6 +307,13 @@ function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) 
         <div className={cx("mt-3 flex items-center gap-2 rounded-xl p-3 text-sm", c.trend === "worse" ? "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300" : c.trend === "better" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "surface-2 ink-2")}>
           <TrendIcon className="size-4" />
           {c.trend === "worse" ? `Getting slower - last 3 payments averaged ${lateness(c.recent_days_late, true)}.` : c.trend === "better" ? `Improving - last 3 payments averaged ${lateness(c.recent_days_late, true)}.` : "Payment behaviour is steady."}
+        </div>
+      )}
+      {persona && (
+        <div className="mt-3 rounded-xl border line p-3 text-sm">
+          <div className="flex items-center gap-2"><span className="size-2.5 rounded-full" style={{ background: persona.color }} />
+            <span className="font-medium ink">Persona: {persona.label}</span><span className="ml-auto text-[11px] ink-3">learned by K-means from payment behaviour</span></div>
+          <p className="mt-1 text-xs ink-2">{persona.strategy}</p>
         </div>
       )}
       {c.overdue_amount > 0 && (

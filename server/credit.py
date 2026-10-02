@@ -9,7 +9,7 @@ import pandas as pd
 from sqlmodel import Session, select
 
 from . import actions as A
-from . import ml
+from . import intel, ml
 from . import services as S
 from .db import Buyer, Invoice, Org
 
@@ -133,4 +133,6 @@ def check_order(s: Session, org: Org, buyer_id: int | None, new_name: str | None
         expected_days_to_cash=exp_days, delay_cost=delay_cost, price_cushion=cushion,
         open_amount=open_amt, overdue_amount=overdue_amt, oldest_overdue_days=oldest_overdue,
         exposure_after=exposure, suggested_limit=limit, monthly_billing=monthly, reasons=reasons,
+        # what-if: the same model re-scored under other credit periods
+        what_if=intel.what_if_terms(s, org, buyer_id, new_name, amount, sorted({15, 30, 45, 60, days})),
     )

@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, Bot, MessageCircleQuestion, Radar, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowRight, Bot, MessageCircleQuestion, Radar, ScanSearch, TrendingUp } from "lucide-react";
 import { Link, useOutletContext } from "react-router-dom";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { api, type ForecastWeek } from "../lib/api";
-import { cx } from "../lib/format";
+import { cx, inrShort } from "../lib/format";
 import { Md, ReasoningTrace, type AgentReply } from "./ai";
 import { useDrawers } from "./Drawers";
 import { Card, Skeleton } from "./ui";
+import { useAnomalies } from "./AILab";
 
 type Alert = { kind: "slowing" | "unusual" | "concentration"; customer_id: number; name: string; text: string };
 
@@ -21,7 +22,7 @@ export function AIBriefingCard({ weeks }: { weeks?: ForecastWeek[] }) {
         <div className="pointer-events-none absolute -right-10 -top-10 size-56 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex flex-wrap items-center gap-2 text-xs font-medium text-white/85">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1"><Bot className="size-3.5" />AI briefing</span>
-          <span className="text-white/65">written by the PayPredict Agent from your ledger{data?.ms != null ? ` · ${data.ms < 1000 ? `${data.ms} ms` : `${(data.ms / 1000).toFixed(1)} s`}` : ""}</span>
+          <span className="text-white/65">written by Munim AI from your ledger{data?.ms != null ? ` · ${data.ms < 1000 ? `${data.ms} ms` : `${(data.ms / 1000).toFixed(1)} s`}` : ""}</span>
         </div>
         <div className="relative mt-4 grid gap-6 md:grid-cols-[1fr_240px]">
           <div className="min-w-0 text-[15px] leading-relaxed [&_strong]:font-semibold">
@@ -66,23 +67,34 @@ const LABEL = { slowing: "Paying slower", unusual: "Unusual for them", concentra
 /** Behaviour-change detection: customers whose recent payments break from their own habit. */
 export function AIAlertsCard() {
   const { data } = useQuery<Alert[]>({ queryKey: ["alerts"], queryFn: () => api("/alerts"), staleTime: 60_000 });
-  const { openCustomer } = useDrawers();
-  if (!data?.length) return null;
+  const { data: odd } = useAnomalies();
+  const { openCustomer, openInvoice } = useDrawers();
+  if (!data?.length && !odd?.length) return null;
   return (
     <Card className="mt-4 p-4 sm:p-5" data-tour="alerts">
       <div className="flex items-center gap-2">
         <span className="grid size-8 place-items-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"><Radar className="size-4" /></span>
         <div className="flex-1"><div className="font-semibold ink">AI early warnings</div>
-          <div className="text-xs ink-3">The AI compares each customer's latest payments with their own long-run habit</div></div>
+          <div className="text-xs ink-3">Behaviour-change detection on each customer's own habit, plus an Isolation Forest scan for unusual invoices</div></div>
       </div>
       <ul className="mt-3 divide-y line">
-        {data.slice(0, 4).map((a) => (
+        {(data ?? []).slice(0, 3).map((a) => (
           <li key={a.kind + a.customer_id}>
             <button onClick={() => openCustomer(a.customer_id)} className="focus-ring flex w-full items-start gap-3 rounded-lg px-1 py-2.5 text-left hover:bg-[var(--surface-2)]">
               <span className={cx("mt-0.5 grid size-7 shrink-0 place-items-center rounded-full",
                 a.kind === "slowing" ? "bg-rose-50 text-rose-600 dark:bg-rose-500/10" : a.kind === "unusual" ? "bg-amber-50 text-amber-600 dark:bg-amber-500/10" : "bg-sky-50 text-sky-600 dark:bg-sky-500/10")}>{ICON[a.kind]}</span>
               <span className="min-w-0 flex-1"><span className="block text-[11px] font-semibold uppercase tracking-wide ink-3">{LABEL[a.kind]}</span>
                 <span className="block text-sm ink">{a.text}</span></span>
+              <ArrowRight className="mt-1 size-4 shrink-0 ink-3" />
+            </button>
+          </li>
+        ))}
+        {(odd ?? []).slice(0, 2).map((a) => (
+          <li key={"odd" + a.invoice_id}>
+            <button onClick={() => openInvoice(a.invoice_id)} className="focus-ring flex w-full items-start gap-3 rounded-lg px-1 py-2.5 text-left hover:bg-[var(--surface-2)]">
+              <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-violet-50 text-violet-600 dark:bg-violet-500/10"><ScanSearch className="size-4" /></span>
+              <span className="min-w-0 flex-1"><span className="block text-[11px] font-semibold uppercase tracking-wide ink-3">Unusual invoice</span>
+                <span className="block text-sm ink">{a.name} {a.number} ({inrShort(a.amount)}): {a.reasons[0].charAt(0).toLowerCase() + a.reasons[0].slice(1)}.</span></span>
               <ArrowRight className="mt-1 size-4 shrink-0 ink-3" />
             </button>
           </li>
