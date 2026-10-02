@@ -1,0 +1,113 @@
+{
+ "importance": [
+  {
+   "feature": "hist_pct_late15",
+   "label": "How often they pay 15+ days late",
+   "days": 6.01
+  },
+  {
+   "feature": "hist_avg_days_late",
+   "label": "Their usual delay",
+   "days": 2.49
+  },
+  {
+   "feature": "disputed",
+   "label": "Open dispute",
+   "days": 1.56
+  },
+  {
+   "feature": "invoice_month",
+   "label": "Season (month raised)",
+   "days": 1.38
+  },
+  {
+   "feature": "docs_pending",
+   "label": "Paperwork pending",
+   "days": 1.28
+  },
+  {
+   "feature": "hist_last3_avg_days_late",
+   "label": "Their last 3 payments were late",
+   "days": 1.0
+  },
+  {
+   "feature": "amount_vs_usual",
+   "label": "Bill size vs their usual",
+   "days": 0.83
+  },
+  {
+   "feature": "segment",
+   "label": "Customer segment",
+   "days": 0.5
+  },
+  {
+   "feature": "hist_n_paid",
+   "label": "Amount of payment history",
+   "days": 0.33
+  }
+ ],
+ "curves": {
+  "reliable": [
+   0.9054,
+   0.0827,
+   0.0099,
+   0.0013,
+   0.0004,
+   0.0001,
+   0.0001,
+   0.0001
+  ],
+  "risky": [
+   0.0006,
+   0.0007,
+   0.0016,
+   0.0232,
+   0.4605,
+   0.3653,
+   0.1027,
+   0.0454
+  ]
+ },
+ "sample": 150,
+ "metrics": {
+  "auc": 0.8978029176593594,
+  "auc_baseline": 0.8442901783418748,
+  "mae_days": 9.418025941455545,
+  "mae_days_baseline": 11.673186326340533,
+  "mae_days_due_date": 21.413793103448278,
+  "coverage_90": 0.8598679383712399,
+  "late_amount_top20": 0.419776726901212,
+  "late_amount_top20_baseline": 0.33624000613398575,
+  "n_train": 7925,
+  "n_test": 2735,
+  "paid_invoices": 11555,
+  "customers": 220
+ },
+ "credit_trace": [
+  {
+   "thought": "Understand the question: what is being asked, and about whom?",
+   "action": "intent_model.classify + extract_entities",
+   "observation": "Intent: credit check (65% confident; next best: customer profile 5%). Entities: customer = Deccan Electricals Ltd, amount = ₹5,00,000",
+   "ms": 28
+  },
+  {
+   "thought": "Score a hypothetical ₹5,00,000 invoice from Deccan Electricals Ltd dated today on 30-day credit with the time-to-payment model.",
+   "action": "credit_check(customer='Deccan Electricals Ltd', amount=500000, credit_days=30)",
+   "observation": "87% chance of 15+ days late; exposure after ₹9.7 L vs safe limit ₹4.1 L; verdict CONDITIONS.",
+   "ms": 839
+  }
+ ],
+ "credit_reply": "**Approve with conditions** for ₹5,00,000 to Deccan Electricals Ltd on 30-day credit.\n- Expected payment ~25 Nov (87% chance of 15+ days late).\n- Take 50% advance (₹2,50,000) with the order\n- Or sell this invoice on TReDS as soon as it's accepted\n- If you can't get an advance, price in ~0.9% to cover the expected delay",
+ "briefing_steps": [
+  "Understand the question: what is being asked, and about whom? | intent_model.classify + extract_entities | Intent: daily briefing (100% confident). No specific customer or amount mentioned.",
+  "Start with the big picture: how much is owed, overdue and at risk? | get_business_summary() | Owed ₹4.25 Cr; overdue ₹1.59 Cr; likely late ₹2.88 Cr; 4-week gap ₹1.38 Cr.",
+  "Which customers deserve attention today? Rank by money at stake. | list_invoices(filter='priority', limit=3) | Govt Procurement Office  ₹3.3 L -> Resolve the dispute; Govt Procurement Office  ₹4.3 L -> 45-day legal reminder; Shivneri Fabrics Ltd ₹4.7 L -> 45-day legal reminder",
+  "Has anyone's behaviour changed recently? Run early-warning detection. | detect_behaviour_changes() | 3 warning(s): Govt Procurement Office ; Tapti Fabricators Pvt Lt; Aadi Mart Ltd",
+  "Combine: lead with the cash outlook, then the 3 actions, then the warnings. | compose_answer() | Briefing ready."
+ ],
+ "alerts": [
+  "Govt Procurement Office #211 (Hyderabad) is paying 20 days slower than usual (last 3 invoices ~74 days late vs their usual 55) while owing ₹10.4 L.",
+  "Tapti Fabricators Pvt Ltd is paying 37 days slower than usual (last 3 invoices ~63 days late vs their usual 26) while owing ₹2.9 L.",
+  "Aadi Mart Ltd is paying 17 days slower than usual (last 3 invoices ~46 days late vs their usual 29) while owing ₹4.4 L."
+ ]
+}
