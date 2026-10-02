@@ -8,7 +8,7 @@ import { getToken } from "./lib/api";
 import { useMe } from "./lib/auth";
 import { I18nProvider } from "./lib/i18n";
 import { ThemeProvider, useTheme } from "./lib/theme";
-import { MotionConfig } from "motion/react";
+import { MotionConfig, MotionGlobalConfig } from "motion/react";
 
 // Route-level code splitting: a buyer opening a pay link downloads only the pay page, not charts & dashboards.
 const page = <T extends string>(load: () => Promise<Record<T, React.ComponentType<any>>>, name: T) =>
@@ -25,6 +25,15 @@ const Onboarding = page(() => import("./pages/Onboarding"), "Onboarding");
 const AuthPage = page(() => import("./pages/Auth"), "AuthPage");
 const Notice = page(() => import("./pages/Notice"), "Notice");
 const Pay = page(() => import("./pages/Pay"), "Pay");
+
+// Report/README screenshots run in a headless browser that never paints frames, so animations
+// (charts growing, fades) would freeze half-way. In that mode only, drive them with timers instead.
+try {
+  if (localStorage.getItem("pp_shot")) {
+    MotionGlobalConfig.skipAnimations = true;   // fades/slides render in their final state
+    window.requestAnimationFrame = (cb) => window.setTimeout(() => cb(performance.now()), 16);   // charts still draw
+  }
+} catch { /* storage blocked */ }
 
 const qc = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } } });
 const Spinner = () => <div className="grid h-full min-h-[50vh] place-items-center"><span className="size-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>;

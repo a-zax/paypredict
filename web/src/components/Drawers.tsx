@@ -18,8 +18,9 @@ const DrawerCtx = createContext<Ctx>({ openInvoice: () => {}, openCustomer: () =
 export const useDrawers = () => useContext(DrawerCtx);
 
 export function DrawerProvider({ children }: { children: ReactNode }) {
-  const [inv, setInv] = useState<number | null>(null);
-  const [cust, setCust] = useState<number | null>(null);
+  // Deep links: ?invoice=123 or ?customer=45 open that panel directly (shareable, bookmarkable).
+  const [inv, setInv] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get("invoice")) || null);
+  const [cust, setCust] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get("customer")) || null);
   return (
     <DrawerCtx.Provider value={{ openInvoice: (id) => { setCust(null); setInv(id); }, openCustomer: (id) => { setInv(null); setCust(id); } }}>
       {children}
