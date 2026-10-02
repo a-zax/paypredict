@@ -11,6 +11,8 @@ import { usePageTitle } from "../lib/theme";
 type ModelInfo = {
   kind: "own" | "starter" | null; trained_at: string | null;
   metrics: Record<string, any>;
+  ai?: { model: string; features_used: number; periods: string[]; sample: number;
+    importance: { feature: string; label: string; days: number }[]; curves: { reliable: number[]; risky: number[] } };
   insights: { actions: { kind: string; title: string; sent: number; success_rate: number | null; avg_days_to_pay: number | null }[]; actions_taken: number; recovered_after_action: number };
 };
 
@@ -73,6 +75,70 @@ function ImpactSection() {
   );
 }
 
+const STAGES = [
+  ["Learn habits", "A time-to-payment model learns each customer's payment behaviour from your paid invoices."],
+  ["Predict", "For every unpaid invoice: chance of payment in 8 periods, expected date and likely range."],
+  ["Explain", "Re-runs the model with each factor at a typical value to show what adds days."],
+  ["Decide", "Compares the cost of waiting with each lever and escalates when reminders are ignored."],
+  ["Act & learn", "The agent plans, uses tools, writes messages, and measures the result against its forecast."],
+];
+
+function HowAIWorks({ ai, paid }: { ai: NonNullable<ModelInfo["ai"]>; paid?: number }) {
+  const imp = ai.importance.slice(0, 8);
+  const max = Math.max(...imp.map((f) => f.days), 1);
+  const curves = ai.periods.map((p, i) => ({ p, reliable: Math.round(ai.curves.reliable[i] * 100), risky: Math.round(ai.curves.risky[i] * 100) }));
+  return (
+    <section className="mt-6" data-tour="ai-how">
+      <div className="flex items-center gap-2"><Brain className="size-5 text-violet-600" /><h2 className="text-xl font-semibold ink">How the AI works</h2></div>
+      <ol className="mt-4 grid gap-2 sm:grid-cols-5">
+        {STAGES.map(([t, b], i) => (
+          <li key={t} className="card relative p-3.5">
+            <span className="grid size-6 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-violet-600 text-xs font-bold text-white">{i + 1}</span>
+            <div className="mt-2 text-sm font-semibold ink">{t}</div>
+            <p className="mt-0.5 text-xs leading-snug ink-2">{b}</p>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <Card className="p-5">
+          <h3 className="font-semibold ink">What the model pays most attention to</h3>
+          <p className="text-xs ink-3">Average days of delay each factor adds, across {ai.sample} of your open invoices</p>
+          <div className="mt-4 space-y-2.5">
+            {imp.map((f, i) => (
+              <div key={f.feature} className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_44px] items-center gap-3 text-sm">
+                <span className="truncate ink-2" title={f.label}>{f.label}</span>
+                <span className="h-2.5 overflow-hidden rounded-full surface-2"><span className="block h-full rounded-full bg-gradient-to-r from-brand-500 to-violet-500" style={{ width: `${(f.days / max) * 100}%`, opacity: 1 - i * 0.07 }} /></span>
+                <span className="text-right font-semibold num ink">+{f.days.toFixed(1)}d</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card className="p-5">
+          <h3 className="font-semibold ink">What a prediction looks like</h3>
+          <p className="text-xs ink-3">Chance of payment in each period after the due date, for a reliable vs a risky invoice</p>
+          <div className="mt-3 h-52">
+            <ResponsiveContainer>
+              <BarChart data={curves} margin={{ left: -18, right: 4, top: 6 }}>
+                <CartesianGrid vertical={false} stroke="var(--line)" />
+                <XAxis dataKey="p" tick={axisTick} tickLine={false} axisLine={false} interval={0} />
+                <YAxis tick={axisTick} tickLine={false} axisLine={false} unit="%" />
+                <Tooltip {...tooltipProps} formatter={(v: number, n: string) => [`${v}%`, n === "reliable" ? "Reliable" : "Risky"]} />
+                <Legend {...legendProps} formatter={(v: string) => (v === "reliable" ? "Reliable customer" : "Risky customer")} />
+                <Bar dataKey="reliable" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="risky" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+      <p className="mt-2 text-xs ink-3">
+        Model: discrete-time survival model with gradient-boosted trees · {ai.features_used} features{paid ? ` · trained on ${paid.toLocaleString("en-IN")} paid invoices` : ""} ·
+        {ai.model === "own" ? " personalised to your ledger" : " starter model until you have enough history"}. The AI Copilot (left menu) can explain any of this in plain words.
+      </p>
+    </section>
+  );
+}
+
 export function Accuracy() {
   usePageTitle("Impact & accuracy");
   const qc = useQueryClient();
@@ -93,12 +159,15 @@ export function Accuracy() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight ink sm:text-3xl">Impact & accuracy</h1>
-          <p className="mt-1 ink-2">What PayPredict has done for your cash flow - and how far you can trust its predictions.</p>
+          <h1 className="text-2xl font-semibold tracking-tight ink sm:text-3xl">AI &amp; impact</h1>
+          <p className="mt-1 ink-2">How the AI makes its predictions, how far you can trust them, and what they have done for your cash flow.</p>
         </div>
         <Button icon={<RefreshCw className="size-4" />} loading={retrain.isPending} onClick={() => retrain.mutate()}>Retrain now</Button>
       </div>
 
+      {data.ai?.importance && <HowAIWorks ai={data.ai} paid={m.paid_invoices} />}
+
+      <h2 className="mt-10 text-xl font-semibold ink">What it has done for you</h2>
       <ImpactSection />
 
       <h2 className="mt-10 text-xl font-semibold ink">How accurate is the AI?</h2>

@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { AlertTriangle, ArrowRight, CalendarClock, Clock, PartyPopper, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock, PartyPopper, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { ActionCard } from "../components/ActionCard";
 import { useDrawers } from "../components/Drawers";
 import { Card, Empty, Skeleton, Stat, Term } from "../components/ui";
@@ -13,6 +12,7 @@ import { d, greeting, inrShort } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { usePageTitle } from "../lib/theme";
 import { SetupChecklist } from "../components/SetupChecklist";
+import { AIAlertsCard, AIBriefingCard } from "../components/AIBriefing";
 
 function ProgressRing({ done, total }: { done: number; total: number }) {
   const r = 22, c = 2 * Math.PI * r, p = total ? done / total : 0;
@@ -59,33 +59,7 @@ export function Today() {
       </motion.div>
 
       {/* Headline insight */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <Card data-tour="headline" className="relative mt-5 overflow-hidden border-0 bg-gradient-to-br from-brand-600 via-brand-600 to-violet-700 p-6 text-white sm:p-7">
-          <div className="absolute -right-10 -top-10 size-56 rounded-full bg-white/10 blur-2xl" />
-          <div className="relative grid items-end gap-6 md:grid-cols-[1fr_260px]">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-medium text-white/80"><CalendarClock className="size-4" />Next 4 weeks · until {d(s.gap_date)}</div>
-              <p className="mt-3 text-xl leading-snug sm:text-2xl">
-                You'll likely collect <strong className="font-semibold">{inrShort(s.expected_4w)}</strong>
-                {s.cash_gap_4w > 0 ? <> - that's <strong className="font-semibold underline decoration-white/40 underline-offset-4">{inrShort(s.cash_gap_4w)} less</strong> than your due dates suggest.</> : "."}
-              </p>
-              <p className="mt-2 text-sm text-white/75">Plan salaries, supplier payments and overdraft use around the real number, not the hoped-for one.</p>
-              <Link to="/cash" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-white hover:underline">See the cash forecast <ArrowRight className="size-4" /></Link>
-            </div>
-            {fc && (
-              <div className="h-24">
-                <ResponsiveContainer>
-                  <AreaChart data={fc.weeks}>
-                    <Area dataKey="cum_assumed" stroke="rgba(255,255,255,0.5)" strokeDasharray="4 4" fill="none" strokeWidth={2} />
-                    <Area dataKey="cum_expected" stroke="#fff" fill="rgba(255,255,255,0.18)" strokeWidth={2.5} />
-                  </AreaChart>
-                </ResponsiveContainer>
-                <div className="mt-1 flex gap-4 text-[11px] text-white/75"><span className="flex items-center gap-1.5"><i className="h-0.5 w-4 rounded bg-white" />Expected</span><span className="flex items-center gap-1.5"><i className="h-0 w-4 border-t-2 border-dashed border-white/60" />Due dates</span></div>
-              </div>
-            )}
-          </div>
-        </Card>
-      </motion.div>
+      <AIBriefingCard weeks={fc?.weeks} />
 
       <div data-tour="kpis" className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Stat label={t("owed")} value={inrShort(s.outstanding)} hint={`${s.open_count} unpaid invoices`} icon={<Wallet className="size-4" />} />
@@ -95,6 +69,8 @@ export function Today() {
         <Stat label={<Term k="MSMED">Past 45-day legal limit</Term>} value={inrShort(s.past_45_amount)} tone="red"
           hint={`${s.past_45_count} invoices · 45+ days since invoice`} icon={<AlertTriangle className="size-4" />} />
       </div>
+
+      <AIAlertsCard />
 
       <SetupChecklist />
 

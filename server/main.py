@@ -16,7 +16,7 @@ from pydantic import BaseModel, EmailStr, Field as PField
 from sqlmodel import Session, select
 
 from . import actions as A
-from . import assistant, credit, ingest
+from . import agent, assistant, credit, ingest
 from . import payments as P
 from . import services as S
 from .config import PUBLIC_URL, SECRET
@@ -523,7 +523,8 @@ def model_info(ctx=Depends(current), s: Session = Depends(get_session)):
     _, org = ctx
     run = s.exec(select(ModelRun).where(ModelRun.org_id == org.id).order_by(ModelRun.trained_at.desc())).first()
     return {"kind": run.kind if run else None, "trained_at": run.trained_at.isoformat() if run else None,
-            "metrics": json.loads(run.metrics) if run else {}, "insights": S.insights(s, org.id)}
+            "metrics": json.loads(run.metrics) if run else {}, "insights": S.insights(s, org.id),
+            "ai": S.ai_insights(s, org)}
 
 
 @app.post("/api/model/retrain")
@@ -537,7 +538,35 @@ class ChatIn(BaseModel):
 
 @app.post("/api/assistant")
 def chat(body: ChatIn, ctx=Depends(current), s: Session = Depends(get_session)):
-    return assistant.chat(s, ctx[1], body.messages)
+    """Claude when a key is configured; otherwise the on-device PayPredict Agent - the assistant always works."""
+    _, org = ctx
+    if assistant.configured():
+        out = assistant.chat(s, org, body.messages)
+        if out.get("configured", True):
+            return {**out, "engine": "claude"}
+    question = next((m.get("content", "") for m in reversed(body.messages) if m.get("role") == "user"), "").strip()
+    if not question:
+        raise HTTPException(400, "Ask a question")
+    return agent.run(s, org, question[:500])
+
+
+@app.get("/api/briefing")
+def briefing(ctx=Depends(current), s: Session = Depends(get_session)):
+    """The agent's morning briefing: it investigates (summary, priorities, warnings) and writes it up."""
+    _, org = ctx
+    S.ensure_fresh(s, org)
+    return agent.run(s, org, "brief me on today", force_intent="briefing")
+
+
+@app.get("/api/alerts")
+def alerts(ctx=Depends(current), s: Session = Depends(get_session)):
+    return agent.customer_alerts(s, ctx[1], limit=8)
+
+
+@app.get("/api/invoices/{inv_id}/explain")
+def explain(inv_id: int, ctx=Depends(current), s: Session = Depends(get_session)):
+    _, org = ctx
+    return agent.explain_invoice(s, org, _own_invoice(s, org, inv_id))
 
 
 @app.get("/api/health")

@@ -30,10 +30,11 @@ EOF
 PAY=$(cat report/.pay_path)
 
 shot() {  # name size helper target
+  if [ -n "$ONLY" ] && [[ " $ONLY " != *" $1 "* ]]; then return; fi
   local prof; prof="$TEMP/pp_shot_$1_$RANDOM"
   timeout 60 "$EDGE" --headless=new --disable-gpu --hide-scrollbars --no-first-run --user-data-dir="$prof" \
     --window-size="$2" --virtual-time-budget=20000 --screenshot="$OUT/$1.png" \
-    "http://localhost:8000/$3?to=$(printf %s "$4" | sed 's/?/%3F/; s/=/%3D/g')" >/dev/null 2>&1
+    "http://localhost:8000/$3?to=$(MSYS_NO_PATHCONV=1 ./.venv/Scripts/python.exe -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$4")" >/dev/null 2>&1
   echo "$1: exit $? $(stat -c %s "$OUT/$1.png" 2>/dev/null) bytes"
   rm -rf "$prof"
 }
@@ -46,6 +47,8 @@ shot notice       1000,1350 _shot.html /notice/650   &
 shot today_mobile 500,900   _shot.html /             &
 shot pay_mobile   500,980   _anon.html "$PAY"        &
 shot login        1440,900  _anon.html /login        &
+shot copilot      1440,1000 _shot.html "/?ask=Should I accept an order of 5 lakh from Deccan Electricals?" &
+shot ai_how       1440,1150 _shot.html /impact       &
 wait
 rm -f web/dist/_shot.js web/dist/_shot.html web/dist/_anon.js web/dist/_anon.html report/.pay_path
 echo "done - helper removed"

@@ -164,3 +164,40 @@ def test_forecast_splits_shortfall_by_customer(client, org_a):
     gaps = [g["gap"] for g in f["gap_by_customer"]]
     assert f["gap_weeks"] == 4 and gaps == sorted(gaps, reverse=True) and len(gaps) <= 5
     assert all(g > 0 for g in gaps) and f["gap_total"] >= sum(gaps) - 1
+
+
+def _ask(client, h, q):
+    r = client.post("/api/assistant", headers=h, json={"messages": [{"role": "user", "content": q}]})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_agent_understands_and_shows_reasoning(client, org_a):
+    cases = {"who should I call first?": "priority", "kitna paisa aayega agle 6 hafte": "cash", "किसे कॉल करूं": "priority",
+             "who are my worst payers": "risky", "any warnings?": "alerts", "how much interest can I claim": "legal",
+             "what is overdue": "overdue", "hello": "help"}
+    for q, intent in cases.items():
+        r = _ask(client, org_a, q)
+        assert r["engine"] == "local" and r["intent"] == intent, (q, r["intent"])
+        assert len(r["steps"]) >= 2 and all({"thought", "action", "observation"} <= s.keys() for s in r["steps"])
+        assert r["reply"]
+
+
+def test_agent_entities_credit_and_drafts(client, org_a):
+    buyers = client.get("/api/buyers", headers=org_a).json()
+    name = next(b["name"] for b in buyers if b["open_amount"] > 0 and not b["name"].startswith("Govt"))
+    r = _ask(client, org_a, f"should I accept an order of 5 lakh from {name}?")
+    assert r["intent"] == "credit" and name in r["steps"][0]["observation"] and "₹5,00,000" in r["steps"][0]["observation"]
+    r = _ask(client, org_a, f"write a reminder to {name} in hindi")
+    assert r["intent"] == "draft" and any(ch in r["reply"] for ch in "नमस्ते")     # message actually in Hindi script
+
+
+def test_briefing_alerts_explain_and_ai_insights(client, org_a):
+    b = client.get("/api/briefing", headers=org_a).json()
+    assert b["intent"] == "briefing" and len(b["steps"]) >= 4 and "owed" in b["reply"].lower()
+    assert isinstance(client.get("/api/alerts", headers=org_a).json(), list)
+    inv = client.get("/api/invoices?status=open", headers=org_a).json()["items"][0]["id"]
+    ex = client.get(f"/api/invoices/{inv}/explain", headers=org_a).json()
+    assert {"predicted_days", "typical_days", "factors"} <= ex.keys()
+    ai = client.get("/api/model", headers=org_a).json()["ai"]
+    assert ai["importance"] and len(ai["curves"]["risky"]) == 8 and abs(sum(ai["curves"]["risky"]) - 1) < 0.01

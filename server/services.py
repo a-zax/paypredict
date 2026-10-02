@@ -523,6 +523,42 @@ def impact(s: Session, org: Org, brief: bool = False) -> dict:
     return out
 
 
+_ai_cache: dict[tuple, dict] = {}
+
+
+def ai_insights(s: Session, org: Org, sample: int = 150) -> dict:
+    """'How the AI works': global factor importance (mean days of delay each factor adds across open
+    invoices, by ablation) and example payment-probability curves. Cached per business per day."""
+    from .agent import FACTOR_LABEL                      # local import: agent imports services
+    key = (org.id, today(), _cache.get(org.id, (None,))[0])
+    if key in _ai_cache:
+        return _ai_cache[key]
+    df = frame(s, org.id)
+    if df.empty:
+        return {}
+    bundle, kind = org_bundle(org.id, s)
+    F = ml.build_features(df, today())
+    open_ = F[F["paid_date"].isna()]
+    if open_.empty:
+        return {}
+    smp = open_.sample(min(sample, len(open_)), random_state=0)
+    smp = smp.assign(age=-smp["credit_terms"])   # importance of each factor for the forecast made at invoicing
+    deltas = ml.reason_deltas(bundle, smp)
+    imp = deltas.clip(lower=0).mean().sort_values(ascending=False)
+    dist = ml.distribution(bundle, smp)
+    lo_i, hi_i = int(np.argmin(dist["p_late"])), int(np.argmax(dist["p_late"]))
+    labels = ["On time", "1-7d", "8-15d", "16-30d", "31-45d", "46-60d", "61-90d", "90d+"]
+    out = {
+        "model": kind, "features_used": len(ml.FEATURES), "periods": labels,
+        "importance": [dict(feature=k, label=FACTOR_LABEL.get(k, k), days=round(float(v), 2)) for k, v in imp.items() if v > 0.05][:9],
+        "curves": {"reliable": [round(float(x), 4) for x in dist["pmf"][lo_i]], "risky": [round(float(x), 4) for x in dist["pmf"][hi_i]]},
+        "sample": int(len(smp)),
+    }
+    _ai_cache.clear() if len(_ai_cache) > 200 else None
+    _ai_cache[key] = out
+    return out
+
+
 def notice_data(s: Session, org: Org, b: Buyer) -> dict:
     """Everything needed for a formal MSMED Act demand notice covering all of a customer's overdue invoices."""
     t = today()

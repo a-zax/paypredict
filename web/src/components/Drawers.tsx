@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, CalendarCheck2, Check, Copy, FileText, FileWarning, Link2, Mail, MessageCircleWarning, Phone, Scale, Sparkles, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { BadgeCheck, Brain, CalendarCheck2, Check, Copy, FileText, FileWarning, Link2, Mail, MessageCircleWarning, Phone, Scale, Sparkles, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { toast } from "sonner";
@@ -165,14 +165,7 @@ function InvoicePanel({ id, onCustomer }: { id: number; onCustomer: (id: number)
         </Card>
       )}
 
-      {open && inv.reasons.length > 0 && (
-        <Card className="mt-4 p-5">
-          <h3 className="font-semibold ink">Why the AI thinks so</h3>
-          <ul className="mt-3 space-y-2">
-            {inv.reasons.map((r) => <li key={r} className="flex gap-2.5 text-sm ink-2"><span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand-500" />{r}</li>)}
-          </ul>
-        </Card>
-      )}
+      {open && <AIExplain id={inv.id} reasons={inv.reasons} />}
 
       {open && inv.action && (
         <Card className="mt-4 overflow-hidden" data-tour="drawer-message">
@@ -365,5 +358,47 @@ function CustomerPanel({ id, onInvoice }: { id: number; onInvoice: (id: number) 
           label={<>Registered on <Term k="TReDS" /></>} hint="Lets PayPredict suggest getting paid today by selling their invoices." />
       </Card>
     </div>
+  );
+}
+
+type Explain = { predicted_days: number; typical_days: number; factors: { feature: string; label: string; days: number }[]; model: string };
+
+/** Explainable AI: how many days of delay each factor adds to this invoice's forecast vs a typical invoice. */
+function AIExplain({ id, reasons }: { id: number; reasons: string[] }) {
+  const { data } = useQuery<Explain>({ queryKey: ["explain", id], queryFn: () => api(`/invoices/${id}/explain`), staleTime: 300_000 });
+  const fx = (data?.factors ?? []).filter((f) => Math.abs(f.days) >= 0.5).slice(0, 6);
+  const max = Math.max(1, ...fx.map((f) => Math.abs(f.days)));
+  return (
+    <Card className="mt-4 p-5" data-tour="drawer-why">
+      <div className="flex items-start gap-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300"><Brain className="size-4" /></span>
+        <div className="flex-1">
+          <h3 className="font-semibold ink">Why the AI expects this timing</h3>
+          {data ? (
+            <p className="text-xs ink-2">A typical invoice is paid <b className="ink">{lateness(data.typical_days, true)}</b>. For this one the model expected
+              {" "}<b className="ink">{lateness(data.predicted_days, true)}</b> when it was raised. Each bar shows how much a factor moves that.</p>
+          ) : <Skeleton className="mt-1 h-3 w-3/4" />}
+        </div>
+      </div>
+      {data && fx.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {fx.map((f) => (
+            <div key={f.feature} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_52px] items-center gap-3 text-sm">
+              <span className="truncate ink-2" title={f.label}>{f.label}</span>
+              <span className="h-2.5 overflow-hidden rounded-full surface-2">
+                <span className={cx("block h-full rounded-full", f.days > 0 ? "bg-gradient-to-r from-rose-400 to-rose-500" : "bg-emerald-500")} style={{ width: `${(Math.abs(f.days) / max) * 100}%` }} />
+              </span>
+              <span className={cx("text-right font-semibold num", f.days > 0 ? "text-rose-600" : "text-emerald-600")}>{f.days > 0 ? "+" : "-"}{Math.abs(f.days).toFixed(0)}d</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {reasons.length > 0 && (
+        <ul className="mt-4 space-y-1.5 border-t line pt-3">
+          {reasons.map((r) => <li key={r} className="flex gap-2.5 text-sm ink-2"><span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-violet-500" />{r}</li>)}
+        </ul>
+      )}
+      <p className="mt-3 text-[11px] ink-3">Measured by re-running the time-to-payment model with each factor set to a typical value (ablation). Bars are approximate and don't add up exactly.</p>
+    </Card>
   );
 }

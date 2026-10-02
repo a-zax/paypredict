@@ -11,8 +11,8 @@ export const TOUR_STEPS: TourStep[] = [
     body: <>In 2 minutes you'll see how PayPredict tells you <strong>which customers will pay late</strong>, <strong>what to do about it</strong>, and <strong>how to get paid faster</strong>. You can leave any time and restart from the Help (?) button.</>,
   },
   {
-    route: "/", target: "headline", title: "The one number that matters",
-    body: "This is how much cash will really arrive in the next 4 weeks, compared with what your due dates promise. Plan salaries, supplier payments and overdraft use around this number.",
+    route: "/", target: "headline", title: "Your AI briefing",
+    body: "Every morning the AI agent investigates your ledger and writes this: the real cash outlook, the 3 things to do first and any warnings. Open \"How the AI worked this out\" to see each step it took.",
   },
   {
     route: "/", target: "kpis", title: "Your receivables at a glance",
@@ -79,8 +79,8 @@ export const TOUR_STEPS: TourStep[] = [
     body: <>Press <K>Ctrl</K> + <K>K</K> (or tap the search icon) to jump to any customer, invoice or page, or to run a command.</>,
   },
   {
-    route: "/settings", target: "ask", title: "Ask PayPredict",
-    body: "Ask questions in plain English, हिंदी or मराठी: 'Who should I call first?', 'How much cash comes in this month?'. It answers from your own data.",
+    route: "/settings", target: "ask", title: "AI Copilot",
+    body: "Ask in English, Hinglish, हिंदी or मराठी: \'Who should I call first?\', \'Should I accept a 5 lakh order from Deccan?\'. It plans, calls tools on your real data and shows its reasoning step by step.",
   },
   {
     route: "/settings", target: "help", title: "Help is always here",
