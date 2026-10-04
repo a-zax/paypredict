@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <title>PayPredict - Solution Report - IES MCRC Hackathon 4.0</title>
-<meta name="author" content="Team monikabhati2005 (Aryan Shukla, Monika Bhati)">
+<meta name="author" content="Team No. 4, monikabhati2005 (Aryan Shukla, Monika Bhati)">
 <style>
   @page { size: A4; margin: 22mm 20mm 20mm 20mm;
     @top-left { content: "PayPredict: Solution Report"; font: 8pt Cambria, Georgia, serif; color: #555; }
-    @top-right { content: "IES MCRC Hackathon 4.0 | Team monikabhati2005"; font: 8pt Cambria, Georgia, serif; color: #555; }
+    @top-right { content: "IES MCRC Hackathon 4.0 | Team No. 4 (monikabhati2005)"; font: 8pt Cambria, Georgia, serif; color: #555; }
     @bottom-center { content: "Page " counter(page) " of " counter(pages); font: 8.5pt Cambria, Georgia, serif; color: #333; } }
   @page cover { @top-left { content: none; } @top-right { content: none; } @bottom-center { content: none; } }
   * { box-sizing: border-box; }
@@ -88,6 +88,7 @@
   <div class="sub">An AI System for Receivables Prediction and Credit Decisions<br>for Indian Micro, Small and Medium Enterprises</div>
   <div class="doc">Solution Report</div>
   <table>
+    <tr><td>Team number</td><td>Team No. 4</td></tr>
     <tr><td>Team name</td><td>monikabhati2005</td></tr>
     <tr><td>Team members</td><td>Aryan Shukla<br>Monika Bhati</td></tr>
     <tr><td>Track</td><td>FinTech AI</td></tr>
@@ -368,17 +369,15 @@
   <h1 id="s7">7. Prototype and Model Results</h1>
   <p>The prototype is deployed at <a href="https://paypredict-ad5f.onrender.com">paypredict-ad5f.onrender.com</a>; selecting <i>Try the live demo</i> opens a shared demonstration business without registration. The free hosting tier suspends the service when idle, so the first request may take about 50 seconds. The figures below are taken from the running application. Figure 5 is the screen the user sees each morning, with the briefing written by Munim AI. Figure 6 shows Munim AI reading a customer's reply, with its reasoning steps visible (its answer to a credit question appears in Figure 4). Figure 7 is the detailed view of a single invoice, and Figure 8 the cash-flow forecast, in which the shaded band is the range from 1,000 simulations and the dashed line is the amount promised by due dates.</p>
   <h2>7.1 Application screens</h2>
-  <figure><img src="shots/today.png" style="height:72mm;width:100%;object-fit:cover;object-position:top"><div class="caption"><b>Figure 5.</b> Daily view: the briefing written by Munim AI (cash outlook, priorities, warnings and an anomaly check) above the key figures and early warnings.</div></figure>
-  <div class="row">
-    <figure><img src="shots/reply_panel.png" style="height:74mm;width:auto"><div class="caption"><b>Figure 6.</b> Munim AI reading a customer's reply and estimating whether the promise will hold.</div></figure>
-    <figure><img src="shots/invoice_panel.png" style="height:74mm;width:auto;object-fit:cover;object-position:top"><div class="caption"><b>Figure 7.</b> Invoice view: expected date and range, probability by period, statutory interest and factor explanation.</div></figure>
-  </div>
+  <figure><img src="shots/today.png" style="width:86%"><div class="caption"><b>Figure 5.</b> Daily view: the briefing written by Munim AI (cash outlook, priorities, warnings and an anomaly check) above the key figures and early warnings.</div></figure>
+  <figure><img src="shots/reply.png" style="width:86%"><div class="caption"><b>Figure 6.</b> Munim AI reading a customer's reply and estimating whether the promise will hold.</div></figure>
+  <figure><img src="shots/invoice.png" style="width:86%"><div class="caption"><b>Figure 7.</b> Invoice view: expected date and range, probability by period, statutory interest and factor explanation.</div></figure>
 </section>
 
 <section class="flow">
-  <figure><img src="shots/cash.png" style="width:64%;height:62mm;object-fit:cover;object-position:left top"><div class="caption"><b>Figure 8.</b> Cash-flow forecast from 1,000 simulations against the amount promised by due dates.</div></figure>
-  <figure><img src="shots/ai_personas.png" style="width:76%"><div class="caption"><b>Figure 9.</b> Customer personas learned by K-means, projected onto two principal components.</div></figure>
-  <figure><img src="shots/ai_health.png" style="width:80%"><div class="caption"><b>Figure 10.</b> Model monitoring: calibration on held-out invoices and data drift by feature.</div></figure>
+  <figure><img src="shots/cash.png" style="width:86%"><div class="caption"><b>Figure 8.</b> Cash-flow forecast from 1,000 simulations against the amount promised by due dates.</div></figure>
+  <figure><img src="shots/ai_personas.png" style="width:92%"><div class="caption"><b>Figure 9.</b> Customer personas learned by K-means, projected onto two principal components.</div></figure>
+  <figure><img src="shots/ai_health.png" style="width:96%"><div class="caption"><b>Figure 10.</b> Model monitoring: calibration on held-out invoices and data drift by feature.</div></figure>
 
   <h2>7.2 Back-test results</h2>
   <p>The model was trained on 7,925 invoices raised before 15 September 2025 and evaluated on 2,735 later invoices whose outcome is known, scoring each as of its invoice date. Two baselines are reported: assuming payment on the due date (common practice) and each customer's historical average delay. As Table 6 shows, PayPredict is the most accurate on every measure.</p>
