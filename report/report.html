@@ -64,6 +64,11 @@
   .toc a { color: #111; text-decoration: none; display: flex; gap: 6pt; padding: 1.4pt 0; }
   .toc a .d { flex: 1; border-bottom: .6pt dotted #777; margin-bottom: 3.5pt; }
   .toc a.s { padding-left: 16pt; font-size: 9.4pt; }
+  table.tr { font-size: 8.7pt; margin-top: 6pt; }
+  table.tr th.q { font-weight: normal; font-style: italic; text-align: left; background: #f3f3f3; border-bottom: .3pt solid #c8c8c8; }
+  table.tr td { padding: 4pt 5pt; } table.tr td.k { font-weight: bold; text-align: center; }
+  table.tr td.mono { font-family: Consolas, "Courier New", monospace; font-size: 7.8pt; overflow-wrap: anywhere; }
+  table.tr tr.ans td { background: #f3f3f3; }
   .refs li { font-size: 8.8pt; margin-bottom: 3pt; text-align: left; }
 </style>
 </head>
@@ -208,33 +213,56 @@
   <h1 id="s5">5. Solution Architecture</h1>
   <p>The system is a single web service backed by one database (Figure 1). All models are trained per business and stored in the database, so the service itself holds no state and can be scaled horizontally.</p>
   <figure>
-    <svg viewBox="0 0 640 330" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Cambria, Georgia, serif" font-size="10.5">
-      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111"/></marker></defs>
-      <g fill="#fff" stroke="#111" stroke-width="0.9">
-        <rect x="10" y="12" width="170" height="46"/><rect x="235" y="12" width="170" height="46"/><rect x="460" y="12" width="170" height="46"/>
-        <rect x="10" y="108" width="145" height="52"/><rect x="167" y="108" width="145" height="52"/><rect x="329" y="108" width="145" height="52"/><rect x="486" y="108" width="145" height="52"/>
-        <rect x="10" y="206" width="300" height="52"/><rect x="330" y="206" width="300" height="52"/>
-      </g>
-      <rect x="10" y="282" width="620" height="38" fill="#f2f2f2" stroke="#111" stroke-width="0.9"/>
-      <g text-anchor="middle" fill="#111">
-        <text x="95" y="31" font-weight="bold">Ledger data</text><text x="95" y="47">Tally / Excel export, payments, actions</text>
-        <text x="320" y="31" font-weight="bold">Feature pipeline</text><text x="320" y="47">18 point-in-time features</text>
-        <text x="545" y="31" font-weight="bold">Time-to-payment model</text><text x="545" y="47">gradient-boosted hazards</text>
-        <text x="82" y="128" font-weight="bold">Unsupervised models</text><text x="82" y="143">K-means personas,</text><text x="82" y="155">Isolation Forest</text>
-        <text x="239" y="128" font-weight="bold">Explanations</text><text x="239" y="143">ablation attribution</text><text x="239" y="155">per factor, in days</text>
-        <text x="401" y="128" font-weight="bold">Decision engine</text><text x="401" y="143">cost model, escalation,</text><text x="401" y="155">simulation, what-if</text>
-        <text x="558" y="128" font-weight="bold">Monitoring</text><text x="558" y="143">calibration, drift (PSI),</text><text x="558" y="155">back-test</text>
-        <text x="160" y="226" font-weight="bold">Munim AI agent and reply reader</text><text x="160" y="242">intent models, entity extraction, planner, 17 skills</text>
-        <text x="480" y="226" font-weight="bold">User interfaces</text><text x="480" y="242">web app (React), WhatsApp / e-mail drafts, UPI pay page</text>
-        <text x="320" y="305">FastAPI service (Python) · PostgreSQL holding data and trained models · Docker container on Render</text>
-      </g>
-      <g stroke="#111" stroke-width="0.9" fill="none" marker-end="url(#ar)">
-        <path d="M180,35 L233,35"/><path d="M405,35 L458,35"/>
-        <path d="M320,58 L82,106"/><path d="M545,58 L239,106"/><path d="M545,58 L401,106"/><path d="M545,58 L558,106"/>
-        <path d="M82,160 L140,204"/><path d="M239,160 L190,204"/><path d="M401,160 L230,204"/><path d="M310,232 L328,232"/>
-      </g>
-    </svg>
-    <div class="caption"><b>Figure 1.</b> System architecture. Arrows indicate the flow of data and predictions.</div>
+    <svg viewBox="0 0 640 366" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Cambria, Georgia, serif">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker></defs>
+      <rect x="0" y="4" width="640" height="62" fill="#f3f3f3"/>
+      <text x="8" y="38.0" font-size="8.2" font-weight="bold" letter-spacing="0.8" fill="#444">DATA</text>
+      <rect x="0" y="82" width="640" height="62" fill="#f3f3f3"/>
+      <text x="8" y="116.0" font-size="8.2" font-weight="bold" letter-spacing="0.8" fill="#444">LEARNING</text>
+      <rect x="0" y="162" width="640" height="62" fill="#f3f3f3"/>
+      <text x="8" y="196.0" font-size="8.2" font-weight="bold" letter-spacing="0.8" fill="#444">INTELLIGENCE</text>
+      <rect x="0" y="242" width="640" height="62" fill="#f3f3f3"/>
+      <text x="8" y="276.0" font-size="8.2" font-weight="bold" letter-spacing="0.8" fill="#444">INTERACTION</text>
+      <rect x="0" y="320" width="640" height="44" fill="#f3f3f3"/>
+      <text x="8" y="345.0" font-size="8.2" font-weight="bold" letter-spacing="0.8" fill="#444">PLATFORM</text>
+      <rect x="92" y="10" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="174.0" y="30" text-anchor="middle" font-weight="bold" font-size="10">Accounting export</text><text x="174.0" y="44" text-anchor="middle" font-size="8.6" fill="#333">Tally, Busy, Zoho or Excel (CSV)</text>
+      <rect x="278" y="10" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="360.0" y="30" text-anchor="middle" font-weight="bold" font-size="10">Activity log</text><text x="360.0" y="44" text-anchor="middle" font-size="8.6" fill="#333">payments, promises, replies</text>
+      <rect x="464" y="10" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="546.0" y="30" text-anchor="middle" font-weight="bold" font-size="10">Customer master</text><text x="546.0" y="44" text-anchor="middle" font-size="8.6" fill="#333">segment, language, TReDS status</text>
+      <rect x="92" y="88" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="174.0" y="108" text-anchor="middle" font-weight="bold" font-size="10">Unsupervised models</text><text x="174.0" y="122" text-anchor="middle" font-size="8.6" fill="#333">K-means personas</text><text x="174.0" y="133" text-anchor="middle" font-size="8.6" fill="#333">Isolation Forest anomalies</text>
+      <rect x="278" y="88" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="360.0" y="108" text-anchor="middle" font-weight="bold" font-size="10">Feature pipeline</text><text x="360.0" y="122" text-anchor="middle" font-size="8.6" fill="#333">18 point-in-time features</text><text x="360.0" y="133" text-anchor="middle" font-size="8.6" fill="#333">no future information used</text>
+      <rect x="464" y="88" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="546.0" y="108" text-anchor="middle" font-weight="bold" font-size="10">Time-to-payment model</text><text x="546.0" y="122" text-anchor="middle" font-size="8.6" fill="#333">discrete-time survival,</text><text x="546.0" y="133" text-anchor="middle" font-size="8.6" fill="#333">gradient-boosted hazards</text>
+      <rect x="92" y="168" width="131" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="157.5" y="188" text-anchor="middle" font-weight="bold" font-size="10">Explanations</text><text x="157.5" y="202" text-anchor="middle" font-size="8.6" fill="#333">ablation attribution</text><text x="157.5" y="213" text-anchor="middle" font-size="8.6" fill="#333">days added per factor</text>
+      <rect x="227" y="168" width="131" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="292.5" y="188" text-anchor="middle" font-weight="bold" font-size="10">Decision engine</text><text x="292.5" y="202" text-anchor="middle" font-size="8.6" fill="#333">cost of waiting vs. levers,</text><text x="292.5" y="213" text-anchor="middle" font-size="8.6" fill="#333">escalation ladder</text>
+      <rect x="362" y="168" width="131" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="427.5" y="188" text-anchor="middle" font-weight="bold" font-size="10">Forecast and what-if</text><text x="427.5" y="202" text-anchor="middle" font-size="8.6" fill="#333">1,000 Monte Carlo runs,</text><text x="427.5" y="213" text-anchor="middle" font-size="8.6" fill="#333">credit-period scenarios</text>
+      <rect x="497" y="168" width="131" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="562.5" y="188" text-anchor="middle" font-weight="bold" font-size="10">Monitoring</text><text x="562.5" y="202" text-anchor="middle" font-size="8.6" fill="#333">calibration, drift (PSI),</text><text x="562.5" y="213" text-anchor="middle" font-size="8.6" fill="#333">back-test</text>
+      <rect x="92" y="248" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="174.0" y="268" text-anchor="middle" font-weight="bold" font-size="10">Munim AI agent</text><text x="174.0" y="282" text-anchor="middle" font-size="8.6" fill="#333">intent model, entity extraction,</text><text x="174.0" y="293" text-anchor="middle" font-size="8.6" fill="#333">planner, 17 skills (ReAct)</text>
+      <rect x="278" y="248" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="360.0" y="268" text-anchor="middle" font-weight="bold" font-size="10">Reply reader</text><text x="360.0" y="282" text-anchor="middle" font-size="8.6" fill="#333">7-class NLP model; date, amount</text><text x="360.0" y="293" text-anchor="middle" font-size="8.6" fill="#333">and reference extraction</text>
+      <rect x="464" y="248" width="164" height="50" fill="#fff" stroke="#222" stroke-width="0.8"/><text x="546.0" y="268" text-anchor="middle" font-weight="bold" font-size="10">User interfaces</text><text x="546.0" y="282" text-anchor="middle" font-size="8.6" fill="#333">web app, WhatsApp / e-mail drafts,</text><text x="546.0" y="293" text-anchor="middle" font-size="8.6" fill="#333">UPI pay page</text>
+      <rect x="92" y="326" width="536" height="32" fill="#e6e6e6" stroke="#222" stroke-width="0.8"/><text x="360.0" y="346" text-anchor="middle" font-weight="bold" font-size="10">FastAPI service (Python 3.11)  ·  PostgreSQL: data and trained models  ·  Docker on Render</text>
+      <path d="M174.0,60 L174.0,74" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M360.0,60 L360.0,74" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M546.0,60 L546.0,74" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M174.0,74 L546.0,74" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M360.0,74 L360.0,86" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M278,113 L257,113" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M442,113 L463,113" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M174.0,138 L174.0,153" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M546.0,138 L546.0,153" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M157.5,153 L562.5,153" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M157.5,153 L157.5,166" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M292.5,153 L292.5,166" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M427.5,153 L427.5,166" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M562.5,153 L562.5,166" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M157.5,218 L157.5,233" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M292.5,218 L292.5,233" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M427.5,218 L427.5,233" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M562.5,218 L562.5,233" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M157.5,233 L562.5,233" fill="none" stroke="#222" stroke-width="0.8"/>
+      <path d="M174.0,233 L174.0,246" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M360.0,233 L360.0,246" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      <path d="M546.0,233 L546.0,246" fill="none" stroke="#222" stroke-width="0.8" marker-end="url(#ar)"/>
+      </svg>
+    <div class="caption"><b>Figure 1.</b> System architecture by layer. Each layer consumes the output of the layer above; the platform layer hosts every component.</div>
   </figure>
   <table>
     <thead><tr><th style="width:22%">Layer</th><th>Technology</th></tr></thead>
@@ -299,21 +327,16 @@
 <section class="flow">
   <h2 id="s6-4" style="margin-top:0">6.4 Munim AI: the reasoning agent</h2>
   <p>A <i>munim</i> is the trusted accountant of a traditional Indian business, who knows who owes what and when to ask. Munim AI follows the ReAct pattern of interleaving reasoning steps with tool calls and observations [6]. Understanding is performed by an intent classifier (character n-gram TF-IDF with logistic regression over 17 intents, trained on English, Hinglish, Hindi and Marathi phrasings and robust to spelling variation) and by entity extraction (fuzzy matching of customer names, amounts such as "5 lakh", days, invoice numbers and language). A planner maps each intent to a skill, which is a short sequence of tool calls over the ledger. Every number in an answer therefore comes from the business's own data, and the complete trace is shown to the user. Figure 4 reproduces a trace from the deployed system.</p>
-  <div class="trace">Question: Should I accept an order of 5 lakh from Deccan Electricals?
-
-Thought 1  Understand the question: what is being asked, and about whom?
-Action     intent_model.classify + extract_entities
-Observe    Intent: credit check. Customer = Deccan Electricals Ltd, amount = ₹5,00,000
-
-Thought 2  Score a hypothetical ₹5,00,000 invoice dated today on 30-day credit.
-Action     credit_check(customer='Deccan Electricals Ltd', amount=500000, credit_days=30)
-Observe    87% chance of 15+ days late; exposure after order ₹9.7 L vs safe limit ₹4.1 L; verdict CONDITIONS
-
-Thought 3  What if the credit period changes? Re-score the order at 15-60 days.
-Action     what_if(credit_days=[15, 30, 45, 60])
-Observe    15d -> cash in ~39d; 30d -> ~54d; 45d -> ~69d; 60d -> ~84d
-
-Answer     Approve with conditions: take a 50% advance (₹2,50,000) or sell the invoice on TReDS once accepted.</div>
+  <table class="tr">
+    <thead><tr><th colspan="4" class="q">Question: "Should I accept an order of 5 lakh from Deccan Electricals?"</th></tr>
+      <tr><th style="width:4%">#</th><th style="width:29%">Thought</th><th style="width:31%">Action (tool call)</th><th>Observation</th></tr></thead>
+    <tbody>
+      <tr><td class="k">1</td><td>Understand the question: what is being asked, and about whom?</td><td class="mono">intent_model.classify()<br>extract_entities()</td><td>Intent: credit check. Customer: Deccan Electricals Ltd; amount: ₹5,00,000.</td></tr>
+      <tr><td class="k">2</td><td>Score a hypothetical ₹5,00,000 invoice dated today on 30-day credit.</td><td class="mono">credit_check(customer="Deccan Electricals Ltd", amount=500000, credit_days=30)</td><td>87% chance of payment 15+ days late; exposure after the order ₹9.7 lakh against a safe limit of ₹4.1 lakh. Verdict: conditions.</td></tr>
+      <tr><td class="k">3</td><td>What if the credit period changes? Re-score the same order at 15 to 60 days.</td><td class="mono">what_if(credit_days=[15, 30, 45, 60])</td><td>Expected days to cash: 39, 54, 69 and 84 respectively.</td></tr>
+      <tr class="ans"><td class="k">A</td><td colspan="3"><b>Answer.</b> Approve with conditions: take a 50% advance (₹2,50,000) with the order, or sell the invoice on TReDS once it is accepted. A longer credit period would not reduce the delay; it would only push cash further out.</td></tr>
+    </tbody>
+  </table>
   <div class="caption"><b>Figure 4.</b> Reasoning trace produced by Munim AI for a credit decision (abridged).</div>
 
   <h2 id="s6-5">6.5 Understanding customer replies</h2>
