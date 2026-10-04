@@ -41,14 +41,11 @@ shot() {  # name size helper target
 shot today        1440,1000 _shot.html /             &
 shot invoice      1440,1100 _shot.html "/?invoice=35936" &
 shot cash         1440,1050 _shot.html /cash         &
-shot customers    1440,1000 _shot.html /customers    &
-shot impact       1440,1250 _shot.html /impact       &
-shot notice       1000,1350 _shot.html /notice/650   &
-shot today_mobile 500,900   _shot.html /             &
+shot customers    1440,1100 _shot.html /customers    &
 shot pay_mobile   500,980   _anon.html "$PAY"        &
-shot login        1440,900  _anon.html /login        &
 shot copilot      1440,1000 _shot.html "/?ask=Should I accept an order of 5 lakh from Deccan Electricals?" &
-shot ai_how       1440,1150 _shot.html /impact       &
+shot reply        1440,1000 _shot.html "/?ask=Kaveri replied: will pay by next Friday" &
+shot ai_full      1440,4200 _shot.html /impact       &
 wait
 rm -f web/dist/_shot.js web/dist/_shot.html web/dist/_anon.js web/dist/_anon.html report/.pay_path
 echo "done - helper removed"

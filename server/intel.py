@@ -115,9 +115,7 @@ def parse_when(text: str, today: date) -> tuple[date | None, str]:
     for wd, names in _WEEKDAYS.items():
         for n in names:
             if re.search(rf"(?<![a-z]){re.escape(n)}(?![a-z])", q):
-                ahead = (wd - today.weekday()) % 7 or 7
-                if re.search(r"next\s+" + re.escape(n), q):
-                    ahead += 7 if ahead < 7 else 0
+                ahead = (wd - today.weekday()) % 7 or 7   # "next Friday" in Indian usage = the coming Friday
                 return today + timedelta(days=ahead), n
     if re.search(r"month[\s-]*end|end of (the )?month|mahine ke (end|aakhir)|महीने के (अंत|आखिर)|महिन्याच्या शेवटी", q):
         last = calendar.monthrange(today.year, today.month)[1]
