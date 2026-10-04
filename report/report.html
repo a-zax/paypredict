@@ -5,32 +5,35 @@
 <title>PayPredict - Solution Report - IES MCRC Hackathon 4.0</title>
 <meta name="author" content="Team No. 4, monikabhati2005 (Aryan Shukla, Monika Bhati)">
 <style>
-  @page { size: A4; margin: 22mm 20mm 20mm 20mm;
+  @page { size: A4; margin: 18mm 17mm 16mm 17mm;
     @top-left { content: "PayPredict: Solution Report"; font: 8pt Cambria, Georgia, serif; color: #555; }
     @top-right { content: "IES MCRC Hackathon 4.0 | Team No. 4 (monikabhati2005)"; font: 8pt Cambria, Georgia, serif; color: #555; }
     @bottom-center { content: "Page " counter(page) " of " counter(pages); font: 8.5pt Cambria, Georgia, serif; color: #333; } }
   @page cover { @top-left { content: none; } @top-right { content: none; } @bottom-center { content: none; } }
   * { box-sizing: border-box; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { margin: 0; font-family: Cambria, "Nirmala UI", Georgia, "Times New Roman", serif; font-size: 10pt; line-height: 1.38; color: #111; }
+  body { margin: 0; font-family: Cambria, "Nirmala UI", Georgia, "Times New Roman", serif; font-size: 9.7pt; line-height: 1.32; color: #111; }
   p { margin: 0 0 6pt; text-align: justify; hyphens: auto; }
   ul, ol { margin: 0 0 6pt; padding-left: 16pt; } li { margin-bottom: 2pt; text-align: justify; }
   a { color: #1a4f8b; text-decoration: underline; text-decoration-thickness: .5pt; text-underline-offset: 1.5pt; }
-  h1 { font-size: 14pt; margin: 0 0 8pt; padding-bottom: 3pt; border-bottom: .8pt solid #111; break-after: avoid; }
-  h2 { font-size: 11.2pt; margin: 11pt 0 4pt; break-after: avoid; }
+  h1 { font-size: 14pt; margin: 0 0 6pt; padding-bottom: 3pt; border-bottom: .8pt solid #111; break-after: avoid; }
+  h2 { font-size: 11.2pt; margin: 9pt 0 3pt; break-after: avoid; }
   h3 { font-size: 10.3pt; font-style: italic; font-weight: bold; margin: 8pt 0 3pt; break-after: avoid; }
   .page { break-after: page; } .page:last-child { break-after: auto; }
-  .flow { margin-top: 14pt; } .flow:first-of-type { margin-top: 0; }
+  .flow { margin-top: 10pt; } .flow:first-of-type { margin-top: 0; }
   h1 { break-before: auto; }
   .sec + .sec { margin-top: 14pt; }
   .small { font-size: 9pt; } .note { font-size: 8.6pt; color: #333; }
   /* tables: three-rule (booktabs) style */
-  table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 4pt 0 3pt; break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 4pt 0 3pt; }
+  .tbl { break-inside: avoid; }
+  thead { display: table-header-group; } tr { break-inside: avoid; }
+  figure table, .cover table { break-inside: avoid; }
   thead th { border-top: 1.1pt solid #111; border-bottom: .6pt solid #111; text-align: left; padding: 3.5pt 5pt; font-weight: bold; }
-  td { padding: 3pt 5pt; vertical-align: top; border-bottom: .3pt solid #c8c8c8; }
+  td { padding: 2.3pt 5pt; vertical-align: top; border-bottom: .3pt solid #c8c8c8; }
   tbody tr:last-child td { border-bottom: 1.1pt solid #111; }
   td.n, th.n { text-align: right; white-space: nowrap; }
-  .caption { font-size: 8.8pt; margin: 3pt 0 9pt; text-align: center; }
+  .caption { font-size: 8.8pt; margin: 3pt 0 7pt; text-align: center; }
   .caption b { font-weight: bold; }
   figure { margin: 6pt 0 4pt; break-inside: avoid; text-align: center; }
   figure img { max-width: 100%; border: .5pt solid #999; display: block; margin: 0 auto; }
@@ -77,7 +80,7 @@
   .pair-grid { display: grid; grid-template-columns: 2.82fr 1fr; gap: 8pt; align-items: end; width: 96%; margin: 0 auto; }
   .pair-grid img { width: 100%; border: .5pt solid #999; display: block; }
   .pair .sub, .fig4 .sub { font-size: 8.4pt; font-style: italic; text-align: center; margin-top: 3pt; }
-  .refs li { font-size: 8.8pt; margin-bottom: 3pt; text-align: left; }
+  .refs li { font-size: 8.3pt; line-height: 1.28; margin-bottom: 1.5pt; text-align: left; }
 </style>
 </head>
 <body>
@@ -105,7 +108,7 @@
   <h1 id="summary">Executive Summary</h1>
   <p>Micro and small enterprises in India sell largely on credit and are routinely paid weeks after the due date. The delay is funded through overdrafts, and the statutory protections available to them (the 45-day rule and interest under the MSMED Act, 2006, and Section 43B(h) of the Income-tax Act) are seldom used because collections are managed manually and without any view of which customers will actually pay late.</p>
   <p>PayPredict is a working, deployed system that applies machine learning to this problem. From an ordinary accounting export it learns how each customer pays and, for every unpaid invoice, predicts the payment date with an uncertainty range. It explains each prediction, selects the least costly collection action, and drafts the message in English, Hindi or Marathi with a UPI payment link. An on-device conversational agent, <i>Munim AI</i>, answers questions by planning and calling tools on the business's own data and shows each reasoning step. Supporting models read customer replies, group customers into behavioural personas, flag anomalous invoices, and monitor the main model's calibration and data drift.</p>
-  <p>On a back-test with 2,735 invoices not seen in training, the model predicts the payment date with a mean absolute error of 9.5 days, compared with 21.4 days when the due date is assumed and 11.7 days for each customer's historical average. Its risk ranking reaches an AUC of 0.90 (baseline 0.84). Table 1 summarises these results, which are discussed in Section 7.2. The prototype is publicly accessible with a one-click demonstration account.</p>
+  <p>On a back-test with 2,735 invoices not seen in training, the model predicts the payment date with a mean absolute error of 9.5 days, compared with 21.4 days when the due date is assumed and 11.7 days for each customer's historical average. Its risk ranking reaches an AUC of 0.90 (baseline 0.84). Table 1 summarises these results, which are discussed in Section 7.1. The prototype is publicly accessible with a one-click demonstration account.</p>
 
   <table style="margin-top:8pt">
     <thead><tr><th>Measure (held-out test set)</th><th class="n">PayPredict</th><th class="n">Baseline</th></tr></thead>
@@ -117,7 +120,7 @@
       <tr><td>Calibration error (mean gap, predicted vs. observed)</td><td class="n">6.6%</td><td class="n">-</td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 1.</b> Summary of model performance (Section 7.2).</div>
+  <div class="caption"><b>Table 1.</b> Summary of model performance (Section 7.1).</div>
 
   <h1 id="contents" style="margin-top:10pt">Contents</h1>
   <nav class="toc">
@@ -153,7 +156,7 @@
   <p>The primary users are owner-managers of micro and small manufacturers, traders and service firms with an annual turnover of roughly ₹1 crore to ₹50 crore, selling business-to-business on 30 to 60-day credit. Such a firm typically has 50 to 500 credit customers, a single accountant, books maintained in Tally, Busy, Zoho Books or spreadsheets, and uses WhatsApp as its main channel with customers. Secondary users are the firm's chartered accountant, lenders and TReDS platforms that finance invoices.</p>
   <h2>2.2 Pain points and their causes</h2>
   <p>Table 2 links each pain point to its underlying cause and its consequence for the business; each cause is addressed by a component described in Section 6.</p>
-  <table>
+  <div class="tbl"><table>
     <thead><tr><th style="width:21%">Pain point</th><th style="width:37%">Underlying cause</th><th>Consequence for the business</th></tr></thead>
     <tbody>
       <tr><td>No early warning</td><td>Due dates carry no information about behaviour; ageing reports show only what is already late.</td><td>Unplanned cash shortfalls funded by overdraft at about 11-16% a year.</td></tr>
@@ -164,7 +167,7 @@
       <tr><td>Low trust in software</td><td>Scores without explanation cannot be questioned.</td><td>Tools are abandoned after a few weeks.</td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 2.</b> Pain points identified for the target users.</div>
+  <div class="caption"><b>Table 2.</b> Pain points identified for the target users.</div></div>
   <h2>2.3 Why this is a machine-learning problem</h2>
   <p>Payment behaviour differs between customers, changes over time and depends on context such as season, invoice size, disputes and the amount already outstanding. A rule based on due dates cannot represent this, while a model trained on each business's own payment history can, and it can update its forecast every day as an invoice ages. In the sample business used in this report (a fictional packaging manufacturer in Pune with annual sales of ₹22.6 crore), 51% of invoices were paid more than 15 days late and ₹4.25 crore, roughly 58 days of sales, was outstanding.</p>
   </div>
@@ -174,7 +177,7 @@
 <section class="flow">
   <h1 id="s3">3. Proposed Solution</h1>
   <p>PayPredict is a web application that turns a ledger export into a daily, prioritised and explained plan for collecting money. The business uploads its invoice history once (or uses the sample business); thereafter the system re-scores every open invoice each day and the owner acts on a short list. Table 3 describes how the system is used over a working day.</p>
-  <table>
+  <div class="tbl"><table>
     <thead><tr><th style="width:14%">Stage</th><th style="width:46%">What the system does</th><th>What the user sees and does</th></tr></thead>
     <tbody>
       <tr><td>Overnight</td><td>Re-scores every unpaid invoice, updates customer grades, runs 1,000 cash-flow simulations, checks for behaviour changes and anomalous invoices.</td><td>Nothing; the process is automatic.</td></tr>
@@ -185,7 +188,7 @@
       <tr><td>Over time</td><td>Measures days saved against its own earlier forecast, monitors calibration and drift, and retrains on new payments.</td><td>The <i>AI &amp; impact</i> page reports accuracy and results.</td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 3.</b> Use of the system over a working day.</div>
+  <div class="caption"><b>Table 3.</b> Use of the system over a working day.</div></div>
   <h2>3.1 Principal features</h2>
   <ul>
     <li><b>Payment-date prediction:</b> expected date, likely range and probability of payment in each period for every invoice.</li>
@@ -204,7 +207,7 @@
   <div class="sec">
   <h1 id="s4">4. Innovation and Uniqueness</h1>
   <p>Existing tools for small businesses either send reminders on a fixed schedule or provide a static credit score. PayPredict differs in three respects. First, it predicts <i>when</i> each invoice will be paid as a full probability distribution rather than a single late or not-late label. Second, it couples that prediction to an explicit cost model built around Indian instruments (MSMED interest, Section 43B(h), TReDS and MSME Samadhaan). Third, every output can be inspected: predictions carry factor attributions, the agent exposes its reasoning, and the model's own calibration and drift are reported to the user. Table 4 compares these capabilities with the main categories of tools available to MSMEs today.</p>
-  <table>
+  <div class="tbl"><table>
     <thead><tr><th style="width:40%">Capability</th><th>Accounting software</th><th>Collection tools</th><th>Credit bureaus</th><th>PayPredict</th></tr></thead>
     <tbody>
       <tr><td>Payment date with a range for each invoice</td><td>No</td><td>Partial</td><td>No</td><td>Yes</td></tr>
@@ -216,7 +219,7 @@
       <tr><td>Messages in Hindi and Marathi with UPI link</td><td>No</td><td>Partial</td><td>No</td><td>Yes</td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 4.</b> Comparison with categories of existing tools, based on publicly described features.</div>
+  <div class="caption"><b>Table 4.</b> Comparison with categories of existing tools, based on publicly described features.</div></div>
   </div>
 
   <div class="sec">
@@ -224,7 +227,7 @@
   <p>The system is a single web service backed by one database (Figure 1). All models are trained per business and stored in the database, so the service itself holds no state and can be scaled horizontally.</p>
   <p>Figure 1 shows the architecture as five layers. The <i>data</i> layer holds the imported ledger, the log of actions and replies, and customer details. In the <i>learning</i> layer, a feature pipeline converts this data into 18 point-in-time features that feed both the time-to-payment model and the unsupervised models. The <i>intelligence</i> layer turns predictions into explanations, recommended actions, cash forecasts and health checks. The <i>interaction</i> layer presents these through Munim AI, the reply reader and the user interfaces, and the <i>platform</i> layer hosts all components. Table 5 lists the technology used in each part.</p>
   <figure>
-    <svg viewBox="0 0 640 366" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Cambria, Georgia, serif">
+    <svg viewBox="0 0 640 366" width="92%" xmlns="http://www.w3.org/2000/svg" font-family="Cambria, Georgia, serif">
       <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker></defs>
       <rect x="0" y="4" width="640" height="62" fill="#f3f3f3"/>
       <text x="8" y="38.0" font-size="8.2" font-weight="bold" letter-spacing="0.8" fill="#444">DATA</text>
@@ -275,7 +278,7 @@
       </svg>
     <div class="caption"><b>Figure 1.</b> System architecture by layer. Each layer consumes the output of the layer above; the platform layer hosts every component.</div>
   </figure>
-  <table>
+  <div class="tbl"><table>
     <thead><tr><th style="width:22%">Layer</th><th>Technology</th></tr></thead>
     <tbody>
       <tr><td>Frontend</td><td>React 18, TypeScript, Vite, Tailwind CSS, Recharts; English, Hindi and Marathi interface.</td></tr>
@@ -284,7 +287,7 @@
       <tr><td>Optional language model</td><td>When an Anthropic API key is configured, Claude drives the same tool set; without a key, the on-device agent answers. The product does not depend on any external AI service.</td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 5.</b> Technology stack.</div>
+  <div class="caption"><b>Table 5.</b> Technology stack.</div></div>
   </div>
 </section>
 
@@ -332,7 +335,7 @@
   <p>For each invoice the model is re-evaluated with one factor at a time set to a typical value; the change in the expected delay is that factor's contribution (ablation attribution). Factors adding two or more days are converted into plain-language reasons, for example "usually pays about 27 days late", and shown as a bar chart in the invoice view. Averaged across open invoices, the same procedure yields the global importance in Figure 3, which is consistent with business intuition: the customer's track record dominates, followed by disputes, recent behaviour, season and documentation.</p>
 
   <h2 id="s6-3">6.3 Cost-based decision engine</h2>
-  <p>For each open invoice the engine compares the cost of waiting with the cost of each available action, using the business's own overdraft rate, and applies domain rules: a disputed invoice is resolved before payment is requested, government buyers receive the MSMED reminder but not the 43B(h) argument, and an escalation ladder (reminder, incentive, statutory reminder, formal notice) advances when two reminders are ignored. Statutory interest is computed as amount &times; [(1 + 3<i>r</i>/12)<sup><i>m</i></sup> &minus; 1], where <i>r</i> is the RBI bank rate and <i>m</i> the number of months overdue. The same model also simulates 1,000 possible futures of all unpaid invoices to produce a weekly cash forecast with an 80% range, and re-scores a proposed order under alternative credit periods (what-if analysis).</p>
+  <p>For each open invoice the engine compares the cost of waiting with the cost of each available action, using the business's own overdraft rate, and applies domain rules: a disputed invoice is resolved before payment is requested, government buyers receive the MSMED reminder but not the 43B(h) argument, and an escalation ladder (reminder, incentive, statutory reminder, formal notice) advances when two reminders are ignored. Statutory interest is computed as amount &times; [(1 + 3<i>r</i>/12)<sup><i>m</i></sup> &minus; 1], where <i>r</i> is the RBI bank rate (5.75% in this report; configurable) and <i>m</i> the number of months overdue. The same model also simulates 1,000 possible futures of all unpaid invoices to produce a weekly cash forecast with an 80% range, and re-scores a proposed order under alternative credit periods (what-if analysis).</p>
 </section>
 
 <section class="flow">
@@ -364,35 +367,16 @@
   <p><b>Model monitoring.</b> Calibration is measured on the back-test by grouping invoices by predicted risk and comparing predicted with observed late rates (mean gap 6.6%, Brier score 0.135). Data drift is measured by the population stability index between invoices of the last 90 days and the preceding year; all monitored features currently show values below 0.10, the conventional threshold for stability. Figure 12 shows both checks: the calibration curve lies close to the diagonal, and every drift bar is in the stable range.</p>
 
   <h2>6.7 Data and responsible use</h2>
-  <p>No public dataset of Indian MSME invoice payments exists. The prototype therefore uses a synthetic ledger of a fictional business: 12,193 invoices from 220 customers between October 2023 and September 2026, generated to reflect documented behaviour (persistent customer habits, slower government buyers, festive-season slowdowns, year-end effects, disputes, periods of cash stress and occasional extreme delays). The generating parameters are hidden from the model, which must learn them from invoice history exactly as it would from a real ledger. No message is sent without the user's approval, and generated legal notices are templates to be reviewed with a chartered accountant.</p>
+  <p>No public dataset of Indian MSME invoice payments exists. The prototype therefore uses a synthetic ledger of a fictional business: 12,193 invoices from 220 customers between October 2023 and September 2026, generated to reflect documented behaviour (persistent customer habits, slower government buyers, festive-season slowdowns, year-end effects, disputes, periods of cash stress and occasional extreme delays). The generating parameters are hidden from the model, which must learn them from invoice history exactly as it would from a real ledger. All business names, invoices and amounts in this report are therefore synthetic, and results on real ledgers will differ. No message is sent without the user's approval, and generated legal notices are templates to be reviewed with a chartered accountant.</p>
 </section>
 
 <!-- ================================================================ 7 -->
 <section class="flow">
   <h1 id="s7">7. Prototype and Model Results</h1>
   <p>The prototype is deployed at <a href="https://paypredict-ad5f.onrender.com">paypredict-ad5f.onrender.com</a>; selecting <i>Try the live demo</i> opens a shared demonstration business without registration. The free hosting tier suspends the service when idle, so the first request may take about 50 seconds. The figures below are taken from the running application. Figure 5 is the screen the user sees each morning, with the briefing written by Munim AI. Figure 6 shows Munim AI reading a customer's reply, with its reasoning steps visible (its answer to a credit question appears in Figure 4). Figure 7 is the detailed view of a single invoice, and Figure 8 the cash-flow forecast, in which the shaded band is the range from 1,000 simulations and the dashed line is the amount promised by due dates. Figure 9 follows one reminder from the business to the customer: the message drafted in Hindi with the interest due under the MSMED Act and a UPI link, and the page the customer opens on a phone. Figure 10 shows the order check for the same credit question as Figure 4, including the what-if comparison of credit periods.</p>
-  <h2>7.1 Application screens</h2>
-  <figure><img src="shots/today.png" style="width:86%"><div class="caption"><b>Figure 5.</b> Daily view: the briefing written by Munim AI (cash outlook, priorities, warnings and an anomaly check) above the key figures and early warnings.</div></figure>
-  <figure><img src="shots/reply.png" style="width:86%"><div class="caption"><b>Figure 6.</b> Munim AI reading a customer's reply and estimating whether the promise will hold.</div></figure>
-  <figure><img src="shots/invoice.png" style="width:86%"><div class="caption"><b>Figure 7.</b> Invoice view: expected date and range, probability by period, statutory interest and factor explanation.</div></figure>
-</section>
-
-<section class="flow">
-  <figure><img src="shots/cash.png" style="width:86%"><div class="caption"><b>Figure 8.</b> Cash-flow forecast from 1,000 simulations against the amount promised by due dates.</div></figure>
-  <figure class="pair">
-    <div class="pair-grid">
-      <div><img src="shots/message_hi.png" alt="Reminder drafted in Hindi with a UPI payment link"><div class="sub">(a) Reminder drafted in Hindi, with statutory interest and a UPI link</div></div>
-      <div><img src="shots/pay_hi.png" alt="UPI payment page on a phone, in Hindi"><div class="sub">(b) The page the customer opens</div></div>
-    </div>
-    <div class="caption"><b>Figure 9.</b> Getting paid: (a) the recommended reminder for one invoice, written in the customer's language; (b) the payment page the link opens on the customer's phone. In the shared demonstration the page shows a notice and a sample QR code instead of real payment details.</div>
-  </figure>
-  <figure><img src="shots/credit.png" style="width:74%"><div class="caption"><b>Figure 10.</b> New order check for the order discussed in Figure 4: verdict, conditions, exposure against the safe limit, the what-if comparison of credit periods and the message to the customer.</div></figure>
-  <figure><img src="shots/ai_personas.png" style="width:92%"><div class="caption"><b>Figure 11.</b> Customer personas learned by K-means, projected onto two principal components.</div></figure>
-  <figure><img src="shots/ai_health.png" style="width:96%"><div class="caption"><b>Figure 12.</b> Model monitoring: calibration on held-out invoices and data drift by feature.</div></figure>
-
-  <h2>7.2 Back-test results</h2>
+  <h2>7.1 Back-test results</h2>
   <p>The model was trained on 7,925 invoices raised before 15 September 2025 and evaluated on 2,735 later invoices whose outcome is known, scoring each as of its invoice date. Two baselines are reported: assuming payment on the due date (common practice) and each customer's historical average delay. As Table 6 shows, PayPredict is the most accurate on every measure.</p>
-  <table>
+  <div class="tbl"><table>
     <thead><tr><th>Metric</th><th class="n">Due-date assumption</th><th class="n">Customer average</th><th class="n">PayPredict</th></tr></thead>
     <tbody>
       <tr><td>Mean absolute error of payment date (days)</td><td class="n">21.4</td><td class="n">11.7</td><td class="n"><b>9.5</b></td></tr>
@@ -402,7 +386,26 @@
       <tr><td>Brier score (lower is better)</td><td class="n">-</td><td class="n">-</td><td class="n"><b>0.135</b></td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 6.</b> Back-test on held-out invoices. The error is 56% lower than the due-date assumption and 19% lower than the customer average.</div>
+  <div class="caption"><b>Table 6.</b> Back-test on held-out invoices. The error is 56% lower than the due-date assumption and 19% lower than the customer average.</div></div>
+  <h2>7.2 Application screens</h2>
+  <figure><img src="shots/today.png" style="width:74%"><div class="caption"><b>Figure 5.</b> Daily view: the briefing written by Munim AI (cash outlook, priorities, warnings and an anomaly check) above the key figures and early warnings.</div></figure>
+  <figure><img src="shots/reply.png" style="width:74%"><div class="caption"><b>Figure 6.</b> Munim AI reading a customer's reply and estimating whether the promise will hold.</div></figure>
+  <figure><img src="shots/invoice.png" style="width:74%"><div class="caption"><b>Figure 7.</b> Invoice view: expected date and range, probability by period, statutory interest and factor explanation.</div></figure>
+</section>
+
+<section class="flow">
+  <figure><img src="shots/cash.png" style="width:74%"><div class="caption"><b>Figure 8.</b> Cash-flow forecast from 1,000 simulations against the amount promised by due dates.</div></figure>
+  <figure class="pair">
+    <div class="pair-grid">
+      <div><img src="shots/message_hi.png" alt="Reminder drafted in Hindi with a UPI payment link"><div class="sub">(a) Reminder drafted in Hindi, with statutory interest and a UPI link</div></div>
+      <div><img src="shots/pay_hi.png" alt="UPI payment page on a phone, in Hindi"><div class="sub">(b) The page the customer opens</div></div>
+    </div>
+    <div class="caption"><b>Figure 9.</b> Getting paid: (a) the recommended reminder for one invoice, written in the customer's language; (b) the payment page the link opens on the customer's phone. In the shared demonstration the page shows a notice and a sample QR code instead of real payment details.</div>
+  </figure>
+  <figure><img src="shots/credit.png" style="width:70%"><div class="caption"><b>Figure 10.</b> New order check for the order discussed in Figure 4: verdict, conditions, exposure against the safe limit, the what-if comparison of credit periods and the message to the customer.</div></figure>
+  <figure><img src="shots/ai_personas.png" style="width:92%"><div class="caption"><b>Figure 11.</b> Customer personas learned by K-means, projected onto two principal components.</div></figure>
+  <figure><img src="shots/ai_health.png" style="width:96%"><div class="caption"><b>Figure 12.</b> Model monitoring: calibration on held-out invoices and data drift by feature.</div></figure>
+
 </section>
 
 <!-- ================================================================ 8-9 -->
@@ -410,7 +413,7 @@
   <div class="sec">
   <h1 id="s8">8. Business Impact</h1>
   <p>For the sample business (annual sales of ₹22.6 crore, about ₹6.2 lakh of sales per day, collection period of about 58 days), each day by which collection is accelerated releases working capital and reduces overdraft interest, as shown in Table 7.</p>
-  <table>
+  <div class="tbl"><table>
     <thead><tr><th>Scenario</th><th class="n">Cash released</th><th class="n">Interest saved per year at 14%</th></tr></thead>
     <tbody>
       <tr><td>Collection period reduced by 5 days (58 to 53)</td><td class="n">about ₹31 lakh</td><td class="n">about ₹4.3 lakh</td></tr>
@@ -418,7 +421,7 @@
       <tr><td>Collection period reduced by 15 days (58 to 43)</td><td class="n">about ₹93 lakh</td><td class="n">about ₹13.0 lakh</td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 7.</b> Illustrative impact (cash released = daily sales &times; days saved). These are scenarios, not measured results.</div>
+  <div class="caption"><b>Table 7.</b> Illustrative impact (cash released = daily sales &times; days saved). These are scenarios, not measured results.</div></div>
   <ul>
     <li><b>Planning on realistic numbers:</b> the business plans on about ₹1.6 crore expected over four weeks instead of the ₹3.0 crore implied by due dates.</li>
     <li><b>Recovery of statutory interest:</b> interest under Section 16 of the MSMED Act is computed per invoice and included in notices.</li>
@@ -433,7 +436,7 @@
   <p>The only required input is an invoice list with payment dates, available from any accounting package. About 150 paid invoices across eight customers are sufficient to train a business-specific model; below that, a starter model is used. No installation is needed, the system runs on free cloud tiers, and the agent requires no paid AI service.</p>
   <h2>9.2 Challenges and mitigations</h2>
   <p>Table 8 lists the main risks to adoption and how the design addresses each.</p>
-  <table>
+  <div class="tbl"><table>
     <thead><tr><th style="width:24%">Challenge</th><th>Mitigation</th></tr></thead>
     <tbody>
       <tr><td>Data quality</td><td>Automatic column mapping, Indian date and amount formats, import warnings and the anomaly check.</td></tr>
@@ -442,7 +445,7 @@
       <tr><td>Data protection</td><td>Data is isolated per business and can be deleted, in line with the DPDP Act, 2023; demonstration data is fictional.</td></tr>
     </tbody>
   </table>
-  <div class="caption"><b>Table 8.</b> Implementation challenges and mitigations.</div>
+  <div class="caption"><b>Table 8.</b> Implementation challenges and mitigations.</div></div>
   <h2>9.3 Scalability and business model</h2>
   <p>The service is stateless and the database isolates each business, so capacity grows by adding containers. Scoring more than 600 invoices takes about one second with a single batched update, and the agent answers in about two seconds. A freemium subscription is proposed: free up to 50 customers, then approximately ₹499 to ₹1,999 per month by size, with referral income from TReDS platforms and lenders, and distribution through chartered accountants and accounting-software partners.</p>
   </div>
@@ -481,7 +484,6 @@
     <li>Singer, J. D. and Willett, J. B. (1993). It's about time: Using discrete-time survival analysis to study duration and the timing of events. <i>Journal of Educational Statistics</i>, 18(2), 155-195.</li>
     <li>Pedregosa, F. et al. (2011). Scikit-learn: Machine learning in Python. <i>Journal of Machine Learning Research</i>, 12, 2825-2830. <a href="https://scikit-learn.org">https://scikit-learn.org</a>.</li>
   </ol>
-  <p class="note">Interest calculations use an RBI bank rate of 5.75%, which is configurable. All business names, invoices and amounts in this report are synthetic, and results on real ledgers will differ.</p>
   </div>
 </section>
 
