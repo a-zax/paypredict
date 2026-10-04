@@ -69,6 +69,11 @@
   table.tr td { padding: 4pt 5pt; } table.tr td.k { font-weight: bold; text-align: center; }
   table.tr td.mono { font-family: Consolas, "Courier New", monospace; font-size: 7.8pt; overflow-wrap: anywhere; }
   table.tr tr.ans td { background: #f3f3f3; }
+  .fig4-grid { display: grid; grid-template-columns: 58mm 1fr; gap: 9pt; align-items: start; text-align: left; }
+  .fig4-grid img { width: 100%; border: .5pt solid #999; }
+  .fig4 .sub { font-size: 8.4pt; font-style: italic; text-align: center; margin-top: 3pt; }
+  .fig4 table.tr { margin-top: 0; font-size: 8.4pt; }
+  .fig4 table.tr .mono { font-family: Consolas, "Courier New", monospace; font-size: 7.5pt; color: #333; margin-top: 2pt; overflow-wrap: anywhere; }
   .refs li { font-size: 8.8pt; margin-bottom: 3pt; text-align: left; }
 </style>
 </head>
@@ -328,26 +333,31 @@
 
 <section class="flow">
   <h2 id="s6-4" style="margin-top:0">6.4 Munim AI: the reasoning agent</h2>
-  <p>A <i>munim</i> is the trusted accountant of a traditional Indian business, who knows who owes what and when to ask. Munim AI follows the ReAct pattern of interleaving reasoning steps with tool calls and observations [6]. Understanding is performed by an intent classifier (character n-gram TF-IDF with logistic regression over 17 intents, trained on English, Hinglish, Hindi and Marathi phrasings and robust to spelling variation) and by entity extraction (fuzzy matching of customer names, amounts such as "5 lakh", days, invoice numbers and language). A planner maps each intent to a skill, which is a short sequence of tool calls over the ledger. Every number in an answer therefore comes from the business's own data, and the complete trace is shown to the user. Figure 4 reproduces a trace from the deployed system.</p>
-  <table class="tr">
-    <thead><tr><th colspan="4" class="q">Question: "Should I accept an order of 5 lakh from Deccan Electricals?"</th></tr>
-      <tr><th style="width:4%">#</th><th style="width:29%">Thought</th><th style="width:31%">Action (tool call)</th><th>Observation</th></tr></thead>
-    <tbody>
-      <tr><td class="k">1</td><td>Understand the question: what is being asked, and about whom?</td><td class="mono">intent_model.classify()<br>extract_entities()</td><td>Intent: credit check. Customer: Deccan Electricals Ltd; amount: ₹5,00,000.</td></tr>
-      <tr><td class="k">2</td><td>Score a hypothetical ₹5,00,000 invoice dated today on 30-day credit.</td><td class="mono">credit_check(customer="Deccan Electricals Ltd", amount=500000, credit_days=30)</td><td>87% chance of payment 15+ days late; exposure after the order ₹9.7 lakh against a safe limit of ₹4.1 lakh. Verdict: conditions.</td></tr>
-      <tr><td class="k">3</td><td>What if the credit period changes? Re-score the same order at 15 to 60 days.</td><td class="mono">what_if(credit_days=[15, 30, 45, 60])</td><td>Expected days to cash: 39, 54, 69 and 84 respectively.</td></tr>
-      <tr class="ans"><td class="k">A</td><td colspan="3"><b>Answer.</b> Approve with conditions: take a 50% advance (₹2,50,000) with the order, or sell the invoice on TReDS once it is accepted. A longer credit period would not reduce the delay; it would only push cash further out.</td></tr>
-    </tbody>
-  </table>
-  <div class="caption"><b>Figure 4.</b> Reasoning trace produced by Munim AI for a credit decision (abridged).</div>
+  <p>A <i>munim</i> is the trusted accountant of a traditional Indian business, who knows who owes what and when to ask. Munim AI follows the ReAct pattern of interleaving reasoning steps with tool calls and observations [6]. Understanding is performed by an intent classifier (character n-gram TF-IDF with logistic regression over 17 intents, trained on English, Hinglish, Hindi and Marathi phrasings and robust to spelling variation) and by entity extraction (fuzzy matching of customer names, amounts such as "5 lakh", days, invoice numbers and language). A planner maps each intent to a skill, which is a short sequence of tool calls over the ledger. Every number in an answer therefore comes from the business's own data, and the complete trace is shown to the user. Figure 4 shows a trace from the deployed system, both as it appears in the application and step by step.</p>
+  <figure class="fig4">
+    <div class="fig4-grid">
+      <div><img src="shots/munim_panel.png" alt="Munim AI answering a credit question in the application"><div class="sub">(a) As shown in the application</div></div>
+      <div><table class="tr">
+      <thead><tr><th colspan="3" class="q">Question: "Should I accept an order of 5 lakh from Deccan Electricals?"</th></tr>
+        <tr><th style="width:6%">#</th><th style="width:52%">Thought and action (tool call)</th><th>Observation</th></tr></thead>
+      <tbody>
+        <tr><td class="k">1</td><td>Understand the question: what is being asked, and about whom?<div class="mono">intent_model.classify()<br>extract_entities()</div></td><td>Intent: credit check. Customer: Deccan Electricals Ltd; amount: ₹5,00,000.</td></tr>
+        <tr><td class="k">2</td><td>Score a hypothetical ₹5,00,000 invoice dated today on 30-day credit.<div class="mono">credit_check(customer="Deccan Electricals Ltd", amount=500000, credit_days=30)</div></td><td>88% chance of payment 15+ days late; exposure after the order ₹9.7 lakh against a safe limit of ₹4.1 lakh. Verdict: conditions.</td></tr>
+        <tr><td class="k">3</td><td>What if the credit period changes? Re-score the same order at 15 to 60 days.<div class="mono">what_if(credit_days=[15, 30, 45, 60])</div></td><td>Expected days to cash: 39, 54, 68 and 83.</td></tr>
+        <tr class="ans"><td class="k">A</td><td colspan="2"><b>Answer.</b> Approve with conditions: take a 50% advance (₹2,50,000) with the order, or sell the invoice on TReDS once it is accepted. A longer credit period would not reduce the delay; it would only push cash further out.</td></tr>
+      </tbody>
+    </table><div class="sub">(b) The same trace, step by step</div></div>
+    </div>
+    <div class="caption"><b>Figure 4.</b> Munim AI answering a credit question: (a) the reasoning trace and answer as the user sees them; (b) each step in tabular form.</div>
+  </figure>
 
   <h2 id="s6-5">6.5 Understanding customer replies</h2>
   <p>Customers usually answer reminders informally, for example "kal tak payment ho jayega" or "NEFT done, UTR 4521...". A second classifier assigns the reply to one of seven categories (promise to pay, already paid, dispute, documents required, cash difficulty, discount request, acknowledgement). Rule-based extractors recover the promised date from English, Hindi and Marathi expressions ("next Friday", "15 tarikh", "month end", "अगले हफ्ते"), part-payment amounts and bank references. For a promise, the survival model gives the probability that the invoice is paid by the promised date, which is blended with the customer's record of keeping earlier promises. The system then proposes the next step, records it with one click and drafts a reply in the customer's language. In the trace for "Kaveri replied: will pay by next Friday", the reply was classified as a promise with 91% confidence and the estimated probability of payment by Friday, 9 October was 41%, so the system advises sending the reminder on time.</p>
 
   <h2 id="s6-6">6.6 Unsupervised models and monitoring</h2>
-  <p><b>Payment personas.</b> Each customer with at least five paid invoices is described by five signals: usual delay, variability of delay, share paid more than 15 days late, recent change and additional delay in October-November. K-means clustering with five clusters, initialised at interpretable prototypes and matched to names by the Hungarian algorithm, yields stable groups: Reliable, Steady late, Erratic, Festive-slow and Slipping, each with its own collection strategy. On the sample ledger 219 customers were grouped with a silhouette score of 0.34 (Figure 10).</p>
+  <p><b>Payment personas.</b> Each customer with at least five paid invoices is described by five signals: usual delay, variability of delay, share paid more than 15 days late, recent change and additional delay in October-November. K-means clustering with five clusters, initialised at interpretable prototypes and matched to names by the Hungarian algorithm, yields stable groups: Reliable, Steady late, Erratic, Festive-slow and Slipping, each with its own collection strategy. On the sample ledger 219 customers were grouped with a silhouette score of 0.34 (Figure 9).</p>
   <p><b>Anomaly detection.</b> An Isolation Forest [7] scores recent invoices on the ratio of amount to the customer's median, deviation from the customer's usual credit period and timing, and a rule flags possible duplicates (same amount within three days). Flagged invoices are checked before they are chased, since an error in the ledger otherwise becomes a dispute.</p>
-  <p><b>Model monitoring.</b> Calibration is measured on the back-test by grouping invoices by predicted risk and comparing predicted with observed late rates (mean gap 6.6%, Brier score 0.135). Data drift is measured by the population stability index between invoices of the last 90 days and the preceding year; all monitored features currently show values below 0.10, the conventional threshold for stability. Figure 11 shows both checks: the calibration curve lies close to the diagonal, and every drift bar is in the stable range.</p>
+  <p><b>Model monitoring.</b> Calibration is measured on the back-test by grouping invoices by predicted risk and comparing predicted with observed late rates (mean gap 6.6%, Brier score 0.135). Data drift is measured by the population stability index between invoices of the last 90 days and the preceding year; all monitored features currently show values below 0.10, the conventional threshold for stability. Figure 10 shows both checks: the calibration curve lies close to the diagonal, and every drift bar is in the stable range.</p>
 
   <h2>6.7 Data and responsible use</h2>
   <p>No public dataset of Indian MSME invoice payments exists. The prototype therefore uses a synthetic ledger of a fictional business: 12,193 invoices from 220 customers between October 2023 and September 2026, generated to reflect documented behaviour (persistent customer habits, slower government buyers, festive-season slowdowns, year-end effects, disputes, periods of cash stress and occasional extreme delays). The generating parameters are hidden from the model, which must learn them from invoice history exactly as it would from a real ledger. No message is sent without the user's approval, and generated legal notices are templates to be reviewed with a chartered accountant.</p>
@@ -356,22 +366,19 @@
 <!-- ================================================================ 7 -->
 <section class="flow">
   <h1 id="s7">7. Prototype and Model Results</h1>
-  <p>The prototype is deployed at <a href="https://paypredict-ad5f.onrender.com">paypredict-ad5f.onrender.com</a>; selecting <i>Try the live demo</i> opens a shared demonstration business without registration. The free hosting tier suspends the service when idle, so the first request may take about 50 seconds. The figures below are taken from the running application. Figure 5 is the screen the user sees each morning, with the briefing written by Munim AI. Figures 6 and 7 show Munim AI answering a credit question and reading a customer's reply, each with its reasoning steps visible. Figure 8 is the detailed view of a single invoice, and Figure 9 the cash-flow forecast, in which the shaded band is the range from 1,000 simulations and the dashed line is the amount promised by due dates.</p>
+  <p>The prototype is deployed at <a href="https://paypredict-ad5f.onrender.com">paypredict-ad5f.onrender.com</a>; selecting <i>Try the live demo</i> opens a shared demonstration business without registration. The free hosting tier suspends the service when idle, so the first request may take about 50 seconds. The figures below are taken from the running application. Figure 5 is the screen the user sees each morning, with the briefing written by Munim AI. Figure 6 shows Munim AI reading a customer's reply, with its reasoning steps visible (its answer to a credit question appears in Figure 4). Figure 7 is the detailed view of a single invoice, and Figure 8 the cash-flow forecast, in which the shaded band is the range from 1,000 simulations and the dashed line is the amount promised by due dates.</p>
   <h2>7.1 Application screens</h2>
   <figure><img src="shots/today.png" style="height:72mm;width:100%;object-fit:cover;object-position:top"><div class="caption"><b>Figure 5.</b> Daily view: the briefing written by Munim AI (cash outlook, priorities, warnings and an anomaly check) above the key figures and early warnings.</div></figure>
   <div class="row">
-    <figure><img src="shots/copilot.png" style="height:58mm;width:100%;object-fit:cover;object-position:right top"><div class="caption"><b>Figure 6.</b> Munim AI answering a credit question with its reasoning trace.</div></figure>
-    <figure><img src="shots/reply.png" style="height:58mm;width:100%;object-fit:cover;object-position:right top"><div class="caption"><b>Figure 7.</b> Munim AI reading a customer's reply and estimating whether the promise will hold.</div></figure>
+    <figure><img src="shots/reply_panel.png" style="height:74mm;width:auto"><div class="caption"><b>Figure 6.</b> Munim AI reading a customer's reply and estimating whether the promise will hold.</div></figure>
+    <figure><img src="shots/invoice_panel.png" style="height:74mm;width:auto;object-fit:cover;object-position:top"><div class="caption"><b>Figure 7.</b> Invoice view: expected date and range, probability by period, statutory interest and factor explanation.</div></figure>
   </div>
 </section>
 
 <section class="flow">
-  <div class="row">
-    <figure><img src="shots/invoice.png" style="height:60mm;width:100%;object-fit:cover;object-position:right top"><div class="caption"><b>Figure 8.</b> Invoice view: expected date and range, probability by period, statutory interest and factor explanation.</div></figure>
-    <figure><img src="shots/cash.png" style="height:60mm;width:100%;object-fit:cover;object-position:left top"><div class="caption"><b>Figure 9.</b> Cash-flow forecast from 1,000 simulations against the amount promised by due dates.</div></figure>
-  </div>
-  <figure><img src="shots/ai_personas.png" style="width:76%"><div class="caption"><b>Figure 10.</b> Customer personas learned by K-means, projected onto two principal components.</div></figure>
-  <figure><img src="shots/ai_health.png" style="width:80%"><div class="caption"><b>Figure 11.</b> Model monitoring: calibration on held-out invoices and data drift by feature.</div></figure>
+  <figure><img src="shots/cash.png" style="width:64%;height:62mm;object-fit:cover;object-position:left top"><div class="caption"><b>Figure 8.</b> Cash-flow forecast from 1,000 simulations against the amount promised by due dates.</div></figure>
+  <figure><img src="shots/ai_personas.png" style="width:76%"><div class="caption"><b>Figure 9.</b> Customer personas learned by K-means, projected onto two principal components.</div></figure>
+  <figure><img src="shots/ai_health.png" style="width:80%"><div class="caption"><b>Figure 10.</b> Model monitoring: calibration on held-out invoices and data drift by feature.</div></figure>
 
   <h2>7.2 Back-test results</h2>
   <p>The model was trained on 7,925 invoices raised before 15 September 2025 and evaluated on 2,735 later invoices whose outcome is known, scoring each as of its invoice date. Two baselines are reported: assuming payment on the due date (common practice) and each customer's historical average delay. As Table 6 shows, PayPredict is the most accurate on every measure.</p>
