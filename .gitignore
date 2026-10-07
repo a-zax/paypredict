@@ -13,3 +13,4 @@ web/*.tsbuildinfo
 report/preview/
 report/*.pdf
 report/.pay_path
+*.zip

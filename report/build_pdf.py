@@ -1,4 +1,4 @@
-"""Build the solution-report PDF with headless Edge, then fill the contents page numbers (two passes).
+"""Build the report PDF with headless Edge, then fill the contents page numbers (two passes).
 
     .venv/Scripts/python report/build_pdf.py
 """
