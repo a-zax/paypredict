@@ -1,6 +1,8 @@
 """Business logic shared by the API and the AI assistant."""
 import io
 import json
+import os
+import time
 from contextlib import nullcontext
 from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
@@ -141,6 +143,7 @@ def _history_by_buyer(s: Session, org_id: int) -> dict:
 
 
 def rescore(s: Session, org: Org):
+    clear_service_cache(org.id)
     t = today()
     df = frame(s, org.id)
     if df.empty:
@@ -270,6 +273,7 @@ def clear_org(s: Session, org: Org):
         s.exec(delete(model).where(model.org_id == org.id))
     s.commit()
     _cache.pop(org.id, None)
+    clear_service_cache(org.id)
 
 
 # ------------------------------------------------------------------ views
@@ -329,16 +333,38 @@ def invoice_view(inv: Invoice, b: Buyer, t: date, org: Org | None = None, lang: 
     return v
 
 
-def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000, gap_weeks: int = 4) -> dict:
+DEFAULT_SIMS = int(os.environ.get("PAYPREDICT_SIMS", "300"))
+_forecast_cache: dict[tuple, tuple[float, dict]] = {}
+_summary_cache: dict[tuple, tuple[float, dict]] = {}
+CACHE_TTL = float(os.environ.get("PAYPREDICT_CACHE_TTL", "180"))
+
+
+def clear_service_cache(org_id: int | None = None):
+    global _forecast_cache, _summary_cache
+    if org_id is None:
+        _forecast_cache.clear()
+        _summary_cache.clear()
+    else:
+        _forecast_cache = {k: v for k, v in _forecast_cache.items() if k[0] != org_id}
+        _summary_cache = {k: v for k, v in _summary_cache.items() if k[0] != org_id}
+
+
+def forecast(s: Session, org_id: int, weeks: int = 12, sims: int | None = None, gap_weeks: int = 4) -> dict:
     """Weekly collections: 'assumed' (everyone pays on due date) vs PayPredict expected, with an
     80% band from Monte-Carlo simulation over each invoice's payment-date distribution.
     Also splits the next `gap_weeks` shortfall (due - expected) by customer: who is holding the cash."""
     t = today()
+    effective_sims = DEFAULT_SIMS if sims is None else sims
+    cache_key = (org_id, weeks, gap_weeks, effective_sims, t)
+    now = time.time()
+    hit = _forecast_cache.get(cache_key)
+    if hit and (now - hit[0] < CACHE_TTL):
+        return hit[1]
     invs = s.exec(select(Invoice).where(Invoice.org_id == org_id, Invoice.paid_date.is_(None))).all()
     start = t - timedelta(days=t.weekday())
     week_starts = [start + timedelta(weeks=w) for w in range(weeks)]
     assumed = np.zeros(weeks)
-    sim = np.zeros((sims, weeks))
+    sim = np.zeros((effective_sims, weeks))
     rng = np.random.default_rng(7)
     gap: dict[int, list] = {}          # buyer_id -> [shortfall, invoices]
     for inv in invs:
@@ -349,15 +375,15 @@ def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000, gap_wee
         pmf = np.array(json.loads(inv.pmf or "[]"))
         if pmf.size != ml.NB or pmf.sum() <= 0:
             continue
-        k = rng.choice(ml.NB, size=sims, p=pmf / pmf.sum())
+        k = rng.choice(ml.NB, size=effective_sims, p=pmf / pmf.sum())
         age = (t - inv.due_date).days
         lo, hi = ml.bin_span(k, pmf.nonzero()[0][0], age)   # same day-ranges as the quantiles
-        d = lo + rng.random(sims) * (hi - lo)
+        d = lo + rng.random(effective_sims) * (hi - lo)
         pay = np.array([(inv.due_date - start).days]) + np.round(d)
         pay = np.maximum(pay, (t - start).days)
         w = (pay // 7).astype(int)
         ok = w < weeks
-        np.add.at(sim, (np.arange(sims)[ok], w[ok]), inv.amount)
+        np.add.at(sim, (np.arange(effective_sims)[ok], w[ok]), inv.amount)
         short = due_in_window - inv.amount * float((w < gap_weeks).mean())
         if short > 0:
             g = gap.setdefault(inv.buyer_id, [0.0, 0])
@@ -372,13 +398,20 @@ def forecast(s: Session, org_id: int, weeks: int = 12, sims: int = 1000, gap_wee
                          cum_high=float(np.percentile(cum_sim[:, w], 90))))
     top = sorted(gap.items(), key=lambda kv: -kv[1][0])[:5]
     names = {b.id: b.name for b in s.exec(select(Buyer).where(Buyer.id.in_([k for k, _ in top])))} if top else {}
-    return {"weeks": rows, "outstanding": float(sum(i.amount for i in invs)), "gap_weeks": gap_weeks,
-            "gap_total": float(sum(v[0] for v in gap.values())),
-            "gap_by_customer": [dict(buyer_id=k, name=names.get(k, "?"), gap=float(v[0]), invoices=v[1]) for k, v in top]}
+    result = {"weeks": rows, "outstanding": float(sum(i.amount for i in invs)), "gap_weeks": gap_weeks,
+              "gap_total": float(sum(v[0] for v in gap.values())),
+              "gap_by_customer": [dict(buyer_id=k, name=names.get(k, "?"), gap=float(v[0]), invoices=v[1]) for k, v in top]}
+    _forecast_cache[cache_key] = (now, result)
+    return result
 
 
 def summary(s: Session, org: Org) -> dict:
     t = today()
+    cache_key = (org.id, round(org.cost_of_capital, 4), t)
+    now = time.time()
+    hit = _summary_cache.get(cache_key)
+    if hit and (now - hit[0] < CACHE_TTL):
+        return hit[1]
     invs = s.exec(select(Invoice).where(Invoice.org_id == org.id, Invoice.paid_date.is_(None))).all()
     fc = forecast(s, org.id, weeks=5)
     w4 = fc["weeks"][3] if len(fc["weeks"]) > 3 else None
@@ -388,7 +421,7 @@ def summary(s: Session, org: Org) -> dict:
     paid90 = s.exec(select(Invoice).where(Invoice.org_id == org.id, Invoice.paid_date >= t - timedelta(days=90))).all()
     collected90 = sum(i.amount for i in paid90)
     dso = (sum(i.amount for i in invs) / (collected90 / 90)) if collected90 else None
-    return dict(
+    result = dict(
         outstanding=sum(i.amount for i in invs), open_count=len(invs),
         overdue=sum(i.amount for i in overdue), overdue_count=len(overdue),
         at_risk=sum(i.amount * (i.p_late or 0) for i in invs),
@@ -400,6 +433,8 @@ def summary(s: Session, org: Org) -> dict:
         gap_date=(date.fromisoformat(w4["week"]) + timedelta(days=6)).isoformat() if w4 else None,
         dso=dso, collected_90d=collected90,
     )
+    _summary_cache[cache_key] = (now, result)
+    return result
 
 
 def today_list(s: Session, org: Org, limit: int = 8, base: str | None = None) -> list[dict]:

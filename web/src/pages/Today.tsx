@@ -34,7 +34,7 @@ export function Today() {
   const { openInvoice } = useDrawers();
   usePageTitle("Today");
   const { data, isLoading } = useQuery<{ summary: Summary; actions: Invoice[]; impact: Impact; date: string }>({ queryKey: ["today"], queryFn: () => api("/today") });
-  const { data: fc } = useQuery<{ weeks: ForecastWeek[] }>({ queryKey: ["forecast", 6], queryFn: () => api("/forecast?weeks=6") });
+  const { data: fc } = useQuery<{ weeks: ForecastWeek[] }>({ queryKey: ["forecast", 6], queryFn: () => api("/forecast?weeks=6"), staleTime: 120_000 });
 
   // Track how many of today's initial actions have been completed in this session.
   const initial = useRef<number | null>(null);

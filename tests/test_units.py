@@ -90,7 +90,7 @@ def test_low_risk_is_left_alone():
 
 
 def test_ladder_climbs_after_two_ignored_reminders():
-    old = datetime.now(timezone.utc) - timedelta(days=20)
+    old = datetime.combine(TODAY, datetime.min.time(), tzinfo=timezone.utc) - timedelta(days=20)
     hist = [dict(kind="REMINDER", created_at=old, paid_within_10d=False)] * 2
     assert A.ladder_floor(hist, TODAY) == 1
     assert A.ladder_floor([dict(kind="REMINDER", created_at=old, paid_within_10d=True)], TODAY) == 0

@@ -35,7 +35,7 @@ try {
   }
 } catch { /* storage blocked */ }
 
-const qc = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } } });
+const qc = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1, staleTime: 60_000 } } });
 const Spinner = () => <div className="grid h-full min-h-[50vh] place-items-center"><span className="size-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /></div>;
 
 function Guard({ children, needsOnboarded = true }: { children: ReactNode; needsOnboarded?: boolean }) {
